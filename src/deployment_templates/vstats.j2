@@ -58,12 +58,12 @@
 
     # < Target Server type >
     # Type of hypervisor environment where VMs will be instantiated. Use 'none' when skipping predeploy.
-    # (kvm, vcenter, aws, openstack, nuagex, none) 
+    # (kvm, vcenter, aws, openstack, none) 
     #
     target_server_type: "{{ item.target_server_type }}"
 
     # < Target Server IP or FQDN >
-    # Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server
+    # Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server. When target_server_type is set to openstack, this property is unused and should be set to 0.0.0.0
     #
     target_server: "{{ item.target_server }}"
 
@@ -147,8 +147,42 @@
     {%- else %}
     # vcenter_vmfolder: (global vCenter VM folder)
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter Hosts and Clusters Folder >
+    # Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+    #
+    {%- if item.vcenter_host_clusters_folder is defined %}
+    vcenter_host_clusters_folder: "{{ item.vcenter_host_clusters_folder }}"
+    {%- else %}
+    # vcenter_host_clusters_folder: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter Disk Provision mode >
+    # Disk Provisioning mode for vcenter
+    # (thin, thick, eagerZeroedThick) 
+    #
+    {%- if item.vcenter_disk_mode is defined %}
+    vcenter_disk_mode: "{{ item.vcenter_disk_mode }}"
+    {%- else %}
+    # vcenter_disk_mode: thin
+    {%- endif %}
 
     ########################
+    {%- endif %}
+
+    # < Preserve VSTAT VM >
+    # Shuts down the vm during destroy process, instead of actually deleting them.
+    #
+    {%- if item.preserve_vm is defined %}
+    preserve_vm: {{ item.preserve_vm | lower }}
+    {%- else %}
+    # preserve_vm: true/false
     {%- endif %}
 
     {%- if show_target_server_type | default('aws') == 'aws' %}
@@ -343,8 +377,6 @@
 
     ##############################
 
-    {%- if show_target_server_type | default('kvm') == 'kvm' %}
-
     ##### Extra Disk
 
     # < Add extra disk >
@@ -355,9 +387,6 @@
     {%- else %}
     # add_extra_disk: False
     {%- endif %}
-    {%- endif %}
-
-    {%- if show_target_server_type | default('kvm') == 'kvm' %}
 
     # < Extra disk size in GB >
     # Size of the extra disk in GB. Supported on KVM only.
@@ -367,6 +396,23 @@
     {%- else %}
     # extra_disk_size_gb: 1000
     {%- endif %}
+
+    # < Extra Disk Device >
+    # Device for extra disk
+    #
+    {%- if item.extra_disk_device is defined %}
+    extra_disk_device: "{{ item.extra_disk_device }}"
+    {%- else %}
+    # extra_disk_device: vdb
+    {%- endif %}
+
+    # < Extra Disk Mount Point >
+    # Mount point for extra disk
+    #
+    {%- if item.extra_disk_mount_point is defined %}
+    extra_disk_mount_point: "{{ item.extra_disk_mount_point }}"
+    {%- else %}
+    # extra_disk_mount_point: /var/lib/elasticsearch/
     {%- endif %}
 
     {%- if show_target_server_type | default('kvm') == 'kvm' %}
@@ -438,6 +484,89 @@
     {%- endif %}
 
     #########################
+
+    ##### VSTAT RAM, CPU and Disk Parameters
+
+    # < VSTAT RAM >
+    # Valid for only KVM and VCenter deployments. Amount of VSTAT RAM to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+    #
+    {%- if item.vstat_ram is defined %}
+    vstat_ram: {{ item.vstat_ram }}
+    {%- else %}
+    # vstat_ram: (global VSTAT RAM)
+    {%- endif %}
+
+    # < VSTAT CPU cores >
+    # Valid for only KVM and VCenter deployments. Number of CPU's for VSTAT.
+    #
+    {%- if item.vstat_cpu_cores is defined %}
+    vstat_cpu_cores: {{ item.vstat_cpu_cores }}
+    {%- else %}
+    # vstat_cpu_cores: (global VSTAT CPU)
+    {%- endif %}
+
+    # < VSTAT Disk Size >
+    # Amount of VSTAT disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+    #
+    {%- if item.vstat_allocate_size_gb is defined %}
+    vstat_allocate_size_gb: {{ item.vstat_allocate_size_gb }}
+    {%- else %}
+    # vstat_allocate_size_gb: (global VSTAT DISK)
+    {%- endif %}
+
+    ########################################
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    ##### OpenStack Volume Parameters
+
+    # < Add volume >
+    # Add an additional volume to Elastic Search Nodes. Supported on OpenStack only.
+    #
+    {%- if item.add_volume is defined %}
+    add_volume: {{ item.add_volume | lower }}
+    {%- else %}
+    # add_volume: False
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < Volume Name >
+    # Name of the volume added to Elastic Search Nodes. Different name is required for multiple vstat deployment. Supported on OpenStack only.
+    #
+    {%- if item.volume_name is defined %}
+    volume_name: "{{ item.volume_name }}"
+    {%- else %}
+    # volume_name: volume
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < Volume Size >
+    # Size of the volume added to Elastic Search Nodes. Supported on OpenStack only.
+    #
+    {%- if item.volume_size_gb is defined %}
+    volume_size_gb: {{ item.volume_size_gb }}
+    {%- else %}
+    # volume_size_gb: 40
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < Volume Device >
+    # Device for volume to be attached to
+    #
+    {%- if item.volume_device is defined %}
+    volume_device: "{{ item.volume_device }}"
+    {%- else %}
+    # volume_device: vdb
+    {%- endif %}
+
+    #################################
+    {%- endif %}
 
 {% endfor %}
 {% else %}

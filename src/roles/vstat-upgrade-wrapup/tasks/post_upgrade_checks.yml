@@ -23,20 +23,34 @@
   delay: 30
   changed_when: upgraded_version.rc == 0
 
-- name: Convert version to json format
+- name: Set variable for upgrade versions
   set_fact:
-    upgraded_version_json: "{{ upgraded_version.stdout | from_json }}"
+    upgrade_60_2010:
+      "{{ upgrade_from_version|upper|replace('R','') is search('6.0.') and upgrade_to_version|upper|replace('R','') is search('20.10.') }}"
 
-- name: Get es version saved on vstat node(s)
-  command: "cat /root/current_es_version.log"
-  register: old_es_version
-  changed_when: False
+- name: Set variable for upgrade versions
+  set_fact:
+    upgrade_2010_2010:
+      "{{ upgrade_from_version|upper|replace('R','') is search('20.10.') and upgrade_to_version|upper|replace('R','') is search('20.10.') }}"
 
-- name: Compare es versions before and after upgrade
-  assert:
-    that: old_es_version.stdout != upgraded_version_json.version.number
-    msg: "Elastisearch upgrade failed"
-  when: not inplace_upgrade | default(false)
+- name: Check ES version when required
+  block:
+
+  - name: Convert version to json format
+    set_fact:
+      upgraded_version_json: "{{ upgraded_version.stdout | from_json }}"
+
+  - name: Get es version saved on vstat node(s)
+    command: "cat /root/current_es_version.log"
+    register: old_es_version
+    changed_when: False
+
+  - name: Compare es versions before and after upgrade
+    assert:
+      that: old_es_version.stdout != upgraded_version_json.version.number
+      msg: "Expected Elastisearch version change not detected, upgrade of ES failed"
+
+  when: not upgrade_60_2010 and not upgrade_2010_2010
 
 - block:
 

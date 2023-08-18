@@ -1,6 +1,10 @@
 ---
 - block:
 
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+
   - name: Get monit summary for all process on VSD
     vsd_monit:
       group: all
@@ -16,11 +20,6 @@
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-  register: vsd_version
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Disable maintainance mode on all l3/l2 domains
   vsd_maintainance:
@@ -55,6 +54,8 @@
   no_log: True
   ignore_errors: True
 
+- meta: reset_connection
+
 - name: Shut/noshut vswitch controller on vsc1 after disabling VSD maintenance mode
   sros_config:
     lines:
@@ -70,6 +71,8 @@
   when: groups['vscs'] is defined and groups['vscs'][0] is defined
 
 - debug: var=vsc1_command_statusa verbosity=1
+
+- meta: reset_connection
 
 - name: Shut/noshut vswitch controller on vsc2 after disabling VSD maintenance mode
   sros_config:

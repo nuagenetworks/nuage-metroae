@@ -11,9 +11,9 @@
 
   - include_role:
       name: common
-      tasks_from: copy-qcow2
+      tasks_from: retrieve-kvm-image
 
-  - name: Set locak variable with nsgv destination
+  - name: Set local variable with nsgv destination
     set_fact:
       nsgv_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
 
@@ -35,14 +35,14 @@
     create_zfb_profile:
       nsgv_path: "{{ mktemp_output.path }}"
       fact_name: nsgv_already_configured
-      vsd_license_file: "{{ vsd_license_file }}"
+      vsd_license_file: "{{ vsd_license_file | default(None) }}"
       vsd_auth: "{{ vsd_auth }}"
       zfb_constants: "{{ zfb_constants }}"
       zfb_proxy_user: "{{ zfb_proxy_user }}"
       zfb_nsg: "{{ zfb_nsg }}"
       zfb_ports: "{{ zfb_ports }}"
       zfb_nsg_infra: "{{ zfb_nsg_infra }}"
-      zfb_vsc_infra: "{{ zfb_vsc_infra }}"
+      zfb_vsc_infra: "{{ zfb_vsc_infra | default({}) }}"
     delegate_to: localhost
 
   - name: Ensure NSGV has the correct configuration

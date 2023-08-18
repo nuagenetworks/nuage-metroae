@@ -1,31 +1,38 @@
 ---
 - name: Finding VM folder (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_find:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
     name: "{{ vmname }}"
     validate_certs: no
   register: vsc_vm_folder
   ignore_errors: on
 
+- name: Check output message for unexpected errors
+  assert:
+    that: vsc_vm_folder.msg is search('Unable to find folders for virtual machine')
+    fail_msg: "{{ vsc_vm_folder.msg }}"
+  when: vsc_vm_folder.msg is defined
+
+- name: Check for exception in VSC VM Folder
+  fail: msg="Exception found {{ vsc_vm_folder.exception }}"
+  when: vsc_vm_folder.exception is defined
+
 - name: Gathering info on VM (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_info:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
     datacenter: "{{ vcenter.datacenter }}"
-    folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
+    folder: "{{ vsc_vm_folder['folders'][0] }}"
     name: "{{ vmname }}"
     validate_certs: no
   register: vsc_vm_facts
   ignore_errors: on
   when: vsc_vm_folder is succeeded
-
-- debug: var=vsc_vm_facts verbosity=1
 
 - block:
 
@@ -40,18 +47,14 @@
       delegate_to: localhost
       register: vm_info
 
-    - debug: var=vm_info
-
     - name: Set uuid fact
       set_fact:
         uuid: "{{ item.uuid }}"
       when: item.guest_name == vmname
       with_items: "{{ vm_info.virtual_machines }}"
 
-    - debug: var=uuid
-
     - name: Turn off autostart
-      connection: local
+      delegate_to: localhost
       vmware_autostart:
         name: "{{ vmname }}"
         uuid: "{{ uuid }}"
@@ -62,28 +65,28 @@
         state: disable
 
     - name: Power off the VSC VM
-      connection: local
+      delegate_to: localhost
       vmware_guest:
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
         validate_certs: no
         datacenter: "{{ vcenter.datacenter }}"
-        folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
+        folder: "{{ vsc_vm_folder['folders'][0] }}"
         name: "{{ vmname }}"
         state: "poweredoff"
 
     when: vsc_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
   - name: Removing the VSC VM
-    connection: local
+    delegate_to: localhost
     vmware_guest:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       validate_certs: no
       datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
+      folder: "{{ vsc_vm_folder['folders'][0] }}"
       name: "{{ vmname }}"
       state: "absent"
 

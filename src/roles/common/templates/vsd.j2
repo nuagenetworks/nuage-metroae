@@ -34,14 +34,26 @@ master_vcin: {{ item.master_vcin }}
 
 {% else %}
 
-{% if vsds|length == 1%}
+{% if vsds|length == 1 or item.hostname in stats_only_vsds | default([]) %}
 vsd_sa_or_ha: sa
 {% else %}
 vsd_sa_or_ha: ha
 {% endif %}
 
-{% if vsds|length == 6%}
+{% if (vstats and (vstats | length == 3) or (vstats | length >= 6)) %}
+vstat_sa_or_ha: ha
+{% else %}
+vstat_sa_or_ha: sa
+{% endif %}
+
+{% if vsds|length == 6 and not common.stats_out | default(false) %}
 vsd_standby: true
+{% endif %}
+
+{% if common.stats_out | default(false) %}
+statistics_only: {{ item.hostname in stats_only_vsds }}
+{% else %}
+statistics_only: false
 {% endif %}
 
 {% endif %}
@@ -118,3 +130,19 @@ intermediate_certificate_path: {{ item.intermediate_certificate_path }}
 {% if item.certificate_path is defined %}
 certificate_path: {{ item.certificate_path }}
 {% endif %}
+
+{% if item.vsd_ram is defined %}
+vsd_ram: {{ item.vsd_ram }}
+{% endif %}
+
+{% if item.vsd_cpu_cores is defined %}
+vsd_cpu_cores: {{ item.vsd_cpu_cores }}
+{% endif %}
+
+{% if item.vsd_fallocate_size_gb is defined %}
+vsd_fallocate_size_gb: {{ item.vsd_fallocate_size_gb }}
+{% endif %}
+
+{%- if item.preserve_vm is defined %}
+preserve_vm: {{ item.preserve_vm }}
+{%- endif %}

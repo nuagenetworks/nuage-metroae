@@ -26,7 +26,7 @@
 
       - name: Set VSD creds to default
         set_fact:
-          vsd_user_cred: "{{ vsd_default_auth }}"
+          vsd_user_cred: "{{ vsd_auth.password }}"
 
       - name: Change credentials before upgrade complete flag
         shell: "{{ change_credentials_command }}"
@@ -38,18 +38,11 @@
         until: result.rc == 0
         retries: 40
         delay: 30
+        when: inventory_hostname == groups['primary_vsds'][0]
 
-      - name: Set VSD creds to default
-        set_fact:
-          vsd_user_cred: "{{ vsd_auth.password }}"
-
-      - name: Change credentials before upgrade complete flag
-        shell: "{{ change_credentials_command }}"
-        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-
-      when:
-        - inventory_hostname == groups['primary_vsds'][0]
+      when: 
         - vsd_auth.password | default(vsd_default_auth) != vsd_default_auth
+        - inventory_hostname in groups['primary_vsds']
 
     - block:
 
@@ -79,12 +72,20 @@
     - name: Turn on API on vsd's for major upgrade
       shell: "{{ turn_on_api_command }}"
       when: upgrade_major_or_minor == 'major'
+      retries: 5
+      delay: 10
+      register: result
+      until: result.rc == 0
 
     - import_tasks: check_monit_status.yml
 
-    when: not inplace_upgrade | default(false)
+    when:
+      - not inplace_upgrade | default(false)
+      - not patch_2010R4_only | default(false)
 
   remote_user: "{{ vsd_default_username }}"
+
+- import_tasks: check_certificate_expiration_time.yml
 
 - name: Renew VSD certificates
   include_role:
@@ -93,4 +94,5 @@
   when:
     - not deploy_vcin | default(false)
     - not inplace_upgrade | default(false)
+    - not patch_2010R4_only | default(false)
   run_once: True

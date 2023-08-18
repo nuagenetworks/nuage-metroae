@@ -28,52 +28,72 @@
                 "sectionEnd": "Host and VM Name",
                 "propertyOrder": 20
             },
+            "upgrade_vmname": {
+                "type": "string",
+                "format": "hostname",
+                "title": "Upgrade VM Name",
+                "description": "Virtual Machine name of the new NUH. Used during Upgrade only",
+                "workflow": "Upgrade",
+                "propertyOrder": 30
+            },
             "mgmt_ip": {
                 "type": "string",
-                "format": "ipv4",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
                 "title": "Management IP address",
                 "sectionBegin": "Management Interface",
                 "description": "IP address of the management interface",
-                "propertyOrder": 30
+                "propertyOrder": 40
             },
             "mgmt_ip_prefix": {
                 "type": "integer",
                 "title": "Management IP Prefix Length",
                 "description": "IP Prefix length for the management network",
                 "minimum": 0,
-                "maximum": 32,
-                "propertyOrder": 40
+                "maximum": 128,
+                "propertyOrder": 50
             },
             "mgmt_gateway": {
                 "type": "string",
-                "format": "ipv4",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
                 "title": "Management Gateway IP",
                 "description": "IP address of the gateway on the management network",
                 "sectionEnd": "Management Interface",
-                "propertyOrder": 50
+                "propertyOrder": 60
             },
             "internal_ip": {
                 "type": "string",
-                "format": "ipv4",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
                 "title": "Internal Network IP address",
                 "description": "IP address of the internal network interface. Used for VSD connection when configured",
                 "sectionBegin": "Network Interfaces",
-                "propertyOrder": 60
+                "propertyOrder": 70
             },
             "internal_ip_prefix": {
                 "type": "integer",
                 "title": "Internal Network IP Prefix Length",
                 "description": "IP Prefix length for the internal network",
                 "minimum": 0,
-                "maximum": 32,
-                "propertyOrder": 70
+                "maximum": 128,
+                "propertyOrder": 80
             },
             "internal_gateway": {
                 "type": "string",
-                "format": "ipv4",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
                 "title": "Internal Network Gateway IP",
                 "description": "IP address of the gateway on the internal network",
-                "propertyOrder": 80
+                "propertyOrder": 90
             },
             "external_interface_list": {
                 "type": "array",
@@ -83,29 +103,42 @@
                     "type": "string"
                 },
                 "sectionEnd": "Network Interfaces",
-                "propertyOrder": 90
+                "propertyOrder": 100
             },
             "target_server": {
                 "type": "string",
                 "format": "hostname",
                 "title": "Target Server IP or FQDN",
-                "description": "Hostname or IP address of the KVM hypervisor where the DNS VM will be instantiated",
+                "description": "Hostname or IP address of the KVM hypervisor where the NUH VM will be instantiated",
                 "sectionBegin": "Other parameters",
-                "propertyOrder": 100
+                "propertyOrder": 110
+            },
+            "target_server_type": {
+                "type": "string",
+                "title": "Target Server Type",
+                "description": "Type of hypervisor environment where VMs will be instantiated. Use 'none' when skipping predeploy.",
+                "propertyOrder": 120,
+                "default": "kvm",
+                "enum": [
+                    "kvm",
+                    "vcenter",
+                    "openstack",
+                    "none"
+                ]
             },
             "timezone": {
                 "type": "string",
                 "title": "Timezone",
                 "description": "Timezone of the NUH",
                 "default": "America/Toronto",
-                "propertyOrder": 110,
+                "propertyOrder": 130,
                 "advanced": true
             },
             "custom_configuration_file_location": {
                 "type": "string",
                 "title": "Custom NUH configuration file location",
                 "description": "Optional user specified location of the yaml based configuration file for the NUH. This will replace the default yaml configuration file added by MetroAE",
-                "propertyOrder": 120,
+                "propertyOrder": 140,
                 "advanced": true
             },
             "skip_vsd_installed_check": {
@@ -113,7 +146,7 @@
                 "title": "Skip VSD installed check",
                 "description": "Enable this option to install NUH in situations where no VSD is present",
                 "default": false,
-                "propertyOrder": 130,
+                "propertyOrder": 150,
                 "advanced": true
             },
             "health_monitoring_agent": {
@@ -121,7 +154,7 @@
                 "title": "Health monitoring agent",
                 "description": "Enables setup of a health monitoring agent",
                 "default": "none",
-                "propertyOrder": 140,
+                "propertyOrder": 160,
                 "advanced": true,
                 "enum": [
                     "none",
@@ -132,7 +165,7 @@
                  "type": "array",
                  "title": "KVM cpuset information",
                  "description": "Cpuset information for cpu pinning on KVM. For example, NUH requires 4 cores and sample values will be of the form [ 0, 1, 2, 3 ]",
-                 "propertyOrder": 150,
+                 "propertyOrder": 170,
                  "advanced": true,
                  "sectionEnd": "Other parameters",
                  "items": {
@@ -145,7 +178,7 @@
                 "title": "Management Network Bridge",
                 "description": "Network Bridge used for the management interface on the NUH. This will be a Linux network bridge when deploying on KVM. Defaults to the global setting",
                 "sectionBegin": "Bridge details",
-                "propertyOrder": 160
+                "propertyOrder": 180
             },
             "internal_bridge": {
                 "type": "string",
@@ -154,7 +187,137 @@
                 "description": "Network Bridge used for the internal network on the NUH. This will be a Linux network bridge when deploying on KVM. Defaults to using management bridge",
                 "advanced": true,
                 "sectionEnd": "Bridge details",
-                "propertyOrder": 170
+                "propertyOrder": 190
+            },
+            "vcenter_datacenter": {
+                "type": "string",
+                "title": "vCenter Datacenter Name",
+                "description": "Name of the vCenter Datacenter on which the VSD VM will be deployed. Defaults to the common vCenter Datacenter Name if not defined here.",
+                "default": "(global vCenter Datacenter Name)",
+                "target_server_type": "vcenter",
+                "advanced": true,
+                "sectionBegin": "vCenter Parameters",
+                "propertyOrder": 200
+            },
+            "vcenter_cluster": {
+                "type": "string",
+                "title": "vCenter Cluster Name",
+                "description": "Name of the vCenter Cluster on which the VSD VM will be deployed. Defaults to the common vCenter Cluster Name if not defined here.",
+                "default": "(global vCenter Cluster Name)",
+                "target_server_type": "vcenter",
+                "advanced": true,
+                "propertyOrder": 210
+            },
+            "vcenter_datastore": {
+                "type": "string",
+                "title": "vCenter Datastore Name",
+                "description": "Name of the vCenter Datastore on which the VSD VM will be deployed. Defaults to the common vCenter Datastore Name if not defined here.",
+                "default": "(global vCenter Datastore Name)",
+                "target_server_type": "vcenter",
+                "advanced": true,
+                "sectionEnd": "vCenter Parameters",
+                "propertyOrder": 220
+            },
+            "preserve_vm": {
+                "type": "boolean",
+                "title": "Preserve NUH VM",
+                "description": "Shuts down the vm during destroy process, instead of actually deleting them.",
+                "propertyOrder": 230,
+                "advanced": true
+            },
+            "openstack_image": {
+                "type": "string",
+                "title": "OpenStack Image",
+                "description": "Name of image installed on OpenStack for NUH",
+                "target_server_type": "openstack",
+                "sectionBegin": "OpenStack Parameters",
+                "propertyOrder": 240
+            },
+            "openstack_flavor": {
+                "type": "string",
+                "title": "OpenStack Flavor",
+                "description": "Name of instance flavor installed on OpenStack for NUH",
+                "target_server_type": "openstack",
+                "propertyOrder": 250
+            },
+            "openstack_availability_zone": {
+                "type": "string",
+                "title": "OpenStack Availability Zone",
+                "description": "Name of availability zone on OpenStack for NUH",
+                "target_server_type": "openstack",
+                "propertyOrder": 260
+            },
+            "openstack_network": {
+                "type": "string",
+                "title": "OpenStack Network",
+                "description": "Name of network on OpenStack for NUH",
+                "target_server_type": "openstack",
+                "propertyOrder": 270
+            },
+            "openstack_subnet": {
+                "type": "string",
+                "title": "OpenStack Subnet",
+                "description": "Name of subnet on OpenStack for NUH",
+                "target_server_type": "openstack",
+                "propertyOrder": 280
+            },
+            "openstack_mgmt_port_name": {
+                "type": "string",
+                "title": "OpenStack Port Name",
+                "description": "Name for Mgmt interface",
+                "target_server_type": "openstack",
+                "propertyOrder": 290
+            },
+            "openstack_mgmt_port_security_groups": {
+                "type": "array",
+                "title": "OpenStack Port Security Groups",
+                "description": "Set of security groups to associate with Mgmt interface",
+                "target_server_type": "openstack",
+                "propertyOrder": 300,
+                "items": {
+                    "type": "string"
+                }
+            },
+            "openstack_internal_network": {
+                "type": "string",
+                "title": "OpenStack Internal Network",
+                "description": "Name of Internal network on OpenStack for NUH",
+                "target_server_type": "openstack",
+                "propertyOrder": 310
+            },
+            "openstack_internal_subnet": {
+                "type": "string",
+                "title": "OpenStack Internal Subnet",
+                "description": "Name of Internal subnet on OpenStack for NUH",
+                "target_server_type": "openstack",
+                "propertyOrder": 320
+            },
+            "openstack_internal_port_name": {
+                "type": "string",
+                "title": "OpenStack Internal Port Name",
+                "description": "Name for Internal interface",
+                "target_server_type": "openstack",
+                "propertyOrder": 330
+            },
+            "openstack_internal_port_security_groups": {
+                "type": "array",
+                "title": "OpenStack Internal Port Security Groups",
+                "description": "Set of security groups to associate with Internal interface",
+                "target_server_type": "openstack",
+                "sectionEnd": "OpenStack Parameters",
+                "propertyOrder": 340,
+                "items": {
+                    "type": "string"
+                }
+            },
+            "vsd_fqdn": {
+                "type": "string",
+                "title": "VSD FQDN",
+                "format": "hostname",
+                "default": "",
+                "description": "FQDN of the VSD or VSD cluster",
+                "advanced": true,
+                "propertyOrder": 350
             }
         },
         "required": ["hostname", "mgmt_ip", "mgmt_ip_prefix", "mgmt_gateway", "target_server"]

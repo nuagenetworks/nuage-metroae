@@ -13,20 +13,20 @@
 
 * It can be a VM, physical server or container.
 * It requires CentOS 7.x or RHEL 7.x with basic packages.
-* We recommend that you dedicate a machine (VM) for it.  
+* We recommend that you dedicate a server or VM that has following requirements:
+  * Minimum of 2 CPUs, 4 GBs memory, and 40 GB disk
+  * A read/write NFS mount for accessing the Nuage software images  
 
-2.1 Clone the master branch of the repo onto the **MetroAEe Host**. Read [Setup](SETUP.md) for details.  
+2.1 Clone the master branch of the repo onto the **MetroAE Host**. Read [Setup](SETUP.md) for details. NOTE: Please clone the repo in a location that can be read by libvirt/qemu.
 ```
 git clone https://github.com/nuagenetworks/nuage-metroae.git
-```
-2.2 Install the required packages. Run as root or sudo. Read [Setup](SETUP.md) for details.  
-```
-$ sudo ./setup.sh  
 ```
 
 ## 3. Enable SSH Access
 
 Passwordless SSH must be configured between the MetroAE host and all target servers, a.k.a. hypervisors. This is accomplished by generating SSH keys for the MetroAE user, then copying those keys to the authorized_keys files for the `target_server_username` on every `target_server`. The following steps should be executed on the MetroAE server as the MetroAE user.
+
+Please note that this is only a requirement for target servers that are KVMs. Passwordless SSH is not required for these other target-server types: AWS, Openstack, and vCenter.
 
 ### 3.1 Generate keys for the MetroAE user
 
@@ -48,13 +48,11 @@ See [Setup](SETUP.md) for more details about enabling SSH Access.
 
 Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAE uses ovftool for OVA operations. Note that MetroAE is tested using ovftool version 4.3. ovftool version 4.3 is required for proper operation.
 
-Note that running the metroae Docker container for VMware installations and upgrades requires special handling of the location of the ovftool command. Please see [SETUP.md](SETUP.md) for details.
-
 ## 5. Prepare your environment  
 
 ### 5.1 Unzip Nuage files
 
-Execute: `metroae tools unzip images <zipped_directory> <unzip_directory>`
+Execute: `metroae-container tools unzip images <zipped_directory> <unzip_directory>`
 
 See [SETUP.md](SETUP.md) for details.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Be sure that Nuage packages (tar.gz) are available on localhost (MetroAE host),  

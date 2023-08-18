@@ -1,6 +1,11 @@
 - name: Run this once
   block:
 
+  - name: Get current VSD API version
+    include_role:
+      name: common
+      tasks_from: get-current-vsd-api-version
+
   - name: Format VSPK auth for VSPK module
     set_fact:
       vspk_auth:
@@ -8,14 +13,14 @@
         api_password: "{{ vsd_auth.password }}"
         api_enterprise: "{{ vsd_auth.enterprise }}"
         api_url: "{{ vsd_auth.api_url }}"
-        api_version: v5_0
+        api_version: "{{ current_api_version }}"
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: If the basic license file is defined
     block:
 
     - name: Apply basic license (ignoring errors)
-      connection: local
+      delegate_to: localhost
       nuage_vspk:
         auth: "{{ vspk_auth }}"
         state: present
@@ -25,6 +30,9 @@
       ignore_errors: yes
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       register: vsd_license_output
+      retries: 5
+      delay: 10
+      until: not vsd_license_output.failed
 
     - name: Print basic license application output for debugging
       debug: var=vsd_license_output
@@ -34,6 +42,7 @@
       assert:
         that: "not vsd_license_output.failed or vsd_license_output.msg is search('The license already exists in the system')"
         msg: "The basic license was not already present and could not be applied"
+      ignore_errors: "{{ vsd_continue_on_license_failure | default(false) }}"
 
     when: vsd_license_file is defined
 
@@ -41,7 +50,7 @@
     block:
 
     - name: Apply cluster license (ignoring errors)
-      connection: local
+      delegate_to: localhost
       nuage_vspk:
         auth: "{{ vspk_auth }}"
         type: License
@@ -51,6 +60,9 @@
       ignore_errors: yes
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       register: vsd_cluster_license_output
+      retries: 5
+      delay: 10
+      until: not vsd_cluster_license_output.failed
 
     - name: Print cluster license application output for debugging
       debug: var=vsd_cluster_license_output
@@ -60,6 +72,7 @@
       assert:
         that: "not vsd_cluster_license_output.failed or vsd_cluster_license_output.msg is search('The license already exists in the system')"
         msg: "The cluster license was not already present and could not be applied"
+      ignore_errors: "{{ vsd_continue_on_license_failure | default(false) }}"
 
     when:
       - vsd_cluster_license_file is defined

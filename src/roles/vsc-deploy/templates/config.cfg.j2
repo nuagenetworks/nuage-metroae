@@ -49,14 +49,29 @@ echo "Router (Network Side) Configuration"
             {% if internal_ctrl_ip is defined %}
             address {{ internal_ctrl_ip }}/{{ control_netmask_prefix }}
             {% else %}
+              {% if enable_ipv6 is defined %}
+            ipv6 address {{ control_ip }}/{{ control_netmask_prefix }}
+              {% else %}
             address {{ control_ip }}/{{ control_netmask_prefix }}
+              {% endif %}
             {% endif %}
+            no shutdown
+        exit
+        {% endif %}
+        {% if bgp_interface_ip_address is defined %}
+        interface "bgp"
+            address {{ bgp_interface_ip_address }}/{{ bgp_interface_ip_prefix }}
+            port A/2:{{ bgp_interface_vlan_id }}
             no shutdown
         exit
         {% endif %}
         interface "system"
         {% if system_ip is defined %}
+          {% if enable_ipv6 is defined %}
+            ipv6 address {{ system_ip }}/128
+          {% else %}
             address {{ system_ip }}/32
+          {% endif %}
             no shutdown
         {% else %}
             shutdown
@@ -65,7 +80,9 @@ echo "Router (Network Side) Configuration"
         {% if as_number %}
         autonomous-system {{ as_number }}
         {% endif %}
-        {% if system_ip is defined %}
+        {% if router_id is defined %}
+        router-id {{ router_id }}
+        {% elif system_ip is defined %}
         router-id {{ system_ip }}
         {% endif %}
 #--------------------------------------------------
@@ -76,14 +93,22 @@ echo "Router (Network Side) Configuration"
           {% if vsc_item != inventory_hostname %}
             {% if hostvars[vsc_item].system_ip is defined %}
               {% if hostvars[vsc_item].system_ip != system_ip | default('') and hostvars[vsc_item].control_ip is defined %}
+                {% if enable_ipv6 is defined %}
+        static-route {{ hostvars[vsc_item].system_ip }}/128 next-hop {{ hostvars[vsc_item].control_ip }}
+                {% else %}
         static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ hostvars[vsc_item].control_ip }}
+                {% endif %}
               {% endif %}
             {% endif %}
           {% endif %}
         {% endfor %}
         {% endif %}
         {% if internal_data_gateway_ip is defined %}
+          {% if enable_ipv6 is defined %}
+        static-route ::/0 next-hop {{ internal_data_gateway_ip }}
+          {% else %}
         static-route 0.0.0.0/0 next-hop {{ internal_data_gateway_ip }}
+          {% endif %}
         {% endif %}
     exit
 
@@ -105,7 +130,9 @@ echo "Service Configuration"
                 exit
             exit
 
-        {% if vprn_obj.ipaddr != "" %}
+        {% if vprn_obj.nexthop != "" %}
+        static-route 0.0.0.0/0 next-hop {{ vprn_obj.nexthop }}
+        {% elif vprn_obj.ipaddr != "" %}
         static-route 0.0.0.0/0 next-hop {{ vprn_obj.ipaddr | ipsubnet(vprn_obj.netmask_length, 0) | ipaddr('next_usable') }}
         {% elif control_ip is defined %}
         static-route 0.0.0.0/0 next-hop {{ control_ip | ipsubnet(control_netmask_prefix, 0) | ipaddr('next_usable') }}

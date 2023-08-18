@@ -1,0 +1,31 @@
+#!/bin/sh
+
+cd docker
+TAG=$(git rev-parse --short HEAD)
+if [[ -n "$HTTP_PROXY" ]]
+then
+    export buildproxy="--build-arg http_proxy=$HTTP_PROXY"
+fi
+if [[ -n "$http_proxy" ]]
+then
+    export buildproxy="--build-arg http_proxy=$http_proxy"
+fi
+if [[ -n "$HTTPS_PROXY" ]]
+then
+    export buildproxy="$buildproxy --build-arg https_proxy=$HTTPS_PROXY"
+fi
+if [[ -n "$https_proxy" ]]
+then
+    export buildproxy="$buildproxy --build-arg https_proxy=$https_proxy"
+fi
+
+cp -f ../yum_requirements.txt ./
+cp -f ../pip_requirements.txt ./
+cp -f ../openstack_requirements.txt ./
+docker build $buildproxy -t metroaecontainer:$TAG .
+
+if [[ "$1" != "raw" ]]
+then
+    docker save -o metroae-docker-container.tar metroaecontainer:$TAG 
+    echo "File metroae-docker-container.tar was created"
+fi

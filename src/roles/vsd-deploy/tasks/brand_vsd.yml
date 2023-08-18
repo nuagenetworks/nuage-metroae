@@ -3,18 +3,18 @@
 
   - name: Set branding zip file to Nuage
     set_fact:
-      branding_zip_file: "{{ role_path }}/files/nuage-branding.zip"
+      branding_file: "{{ role_path }}/files/nuage-branding.zip"
     when: branding_zip_file == 'nuage'
 
   - name: Set branding zip file to MetroAE
     set_fact:
-      branding_zip_file: "{{ role_path }}/files/metroae-branding.zip"
+      branding_file: "{{ role_path }}/files/metroae-branding.zip"
     when: branding_zip_file == 'metroae'
 
   - name: Find war file on the VSD
     find:
       path: "/opt/vsd/jboss/standalone/deployments"
-      pattern: "vsd-architect-((5[.][4-9])|[6-9]).*war"
+      pattern: "vsd-architect-(.*).war$"
       recurse: no
       use_regex: yes
     register: rc_war_file
@@ -47,28 +47,59 @@
 
   - name: Copy branding zip file to VSD
     copy:
-      src: "{{ branding_zip_file }}"
+      src: "{{ branding_file }}"
       dest: /tmp/branding/branding.zip
       force: yes
 
   - name: Install branding on VSD
-    shell: "/opt/vsd/install/brand-ui -b /tmp/branding/branding.zip -u {{ rc_war_file.files[0].path }}" # noqa 305
+    command: "/opt/vsd/install/brand-ui -b /tmp/branding/branding.zip -u {{ rc_war_file.files[0].path }}"
     changed_when: True
 
   - name: Restart jboss
     command: monit restart jboss
 
-  remote_user: "{{ vsd_default_username }}"
+  - name: Wait for jboss to restart
+    monit_waitfor_service:
+      name: jboss
+      timeout_seconds: 1200
+      test_interval_seconds: 30
+  
+  - name: Cleaning up tmp directory
+    file:
+      path: /tmp/branding/branding.zip
+      state: absent
+
+  run_once: True
+  delegate_to: "{{ vsd_branding_host }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
 - name: Create backup directory for original branding
   file:
-    path: "{{ metro_backup_root }}/{{ hostname }}-branding"
+    path: "{{ metro_backup_root }}/{{ vsd_branding_host }}-branding"
     state: directory
   delegate_to: localhost
+  run_once: True
 
-- name: Backup original branding
-  fetch:
-    src: "/tmp/original-nuage-branding.zip"
-    dest: "{{ metro_backup_root }}/{{ hostname }}-branding"
-    fail_on_missing: yes
-  remote_user: "{{ vsd_default_username }}"
+- block:
+
+  - name: Backup original branding
+    fetch:
+      src: "/tmp/original-nuage-branding.zip"
+      dest: "{{ metro_backup_root }}/{{ vsd_branding_host }}-branding/"
+      fail_on_missing: yes
+      flat: yes
+    run_once: True
+
+  - name: Delete the branding zip file from VSD's temp directory
+    file:
+      path: /tmp/original-nuage-branding.zip
+      state: absent
+
+  delegate_to: "{{ vsd_branding_host }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"

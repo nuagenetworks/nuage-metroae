@@ -778,7 +778,7 @@ class PyVmomiHelper(PyVmomi):
                 except ValueError:
                     hw_version_check_failed = True
 
-                if temp_version not in range(3, 15):
+                if temp_version not in list(range(3, 15)):
                     hw_version_check_failed = True
 
                 if hw_version_check_failed:
@@ -1202,7 +1202,7 @@ class PyVmomiHelper(PyVmomi):
 
     def get_configured_disk_size(self, expected_disk_spec):
         # what size is it?
-        if [x for x in expected_disk_spec.keys() if x.startswith('size_') or x == 'size']:
+        if [x for x in list(expected_disk_spec.keys()) if x.startswith('size_') or x == 'size']:
             # size, size_tb, size_gb, size_mb, size_kb
             if 'size' in expected_disk_spec:
                 size_regex = re.compile(r'(\d+(?:\.\d+)?)([tgmkTGMK][bB])')
@@ -1229,7 +1229,7 @@ class PyVmomiHelper(PyVmomi):
                     self.module.fail_json(msg="Failed to parse disk size please review value"
                                               " provided using documentation.")
             else:
-                param = [x for x in expected_disk_spec.keys() if x.startswith('size_')][0]
+                param = [x for x in list(expected_disk_spec.keys()) if x.startswith('size_')][0]
                 unit = param.split('_')[-1].lower()
                 expected = [x[1] for x in expected_disk_spec.items() if x[0].startswith('size_')][0]
                 expected = int(expected)
@@ -1241,7 +1241,7 @@ class PyVmomiHelper(PyVmomi):
             else:
                 self.module.fail_json(msg="%s is not a supported unit for disk size."
                                           " Supported units are ['%s']." % (unit,
-                                                                            "', '".join(disk_units.keys())))
+                                                                            "', '".join(list(disk_units.keys()))))
 
         # No size found but disk, fail
         self.module.fail_json(

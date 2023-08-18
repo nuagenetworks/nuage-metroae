@@ -14,9 +14,14 @@
     proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
   when: ssh_proxy_configuration is defined
 
+- name: Get running userinfo for ansible
+  become: false
+  local_action: command whoami
+  register: username_on_the_host
+
 - name: Check connectivity to the target
-  shell: >-
-    sshpass -p{{ ssh_password }} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+  command: >-
+    sshpass -p'{{ ssh_password }}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
     {{ proxy_conf | default("") }} -tt {{ ssh_user }}@{{ ssh_host }}
   register: ssh_result
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
@@ -25,3 +30,5 @@
   delegate_to: localhost
   retries: 10
   delay: "{{ ssh_delay_seconds | default(10) }}"
+  remote_user: "{{ username_on_the_host }}"
+  become: false

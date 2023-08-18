@@ -7,7 +7,7 @@ from alc import dyn
 
 
 def setup_script(vsdParams):
-    print ("These are the VSD params: " + str(vsdParams))
+    print("These are the VSD params: " + str(vsdParams))
     servicetype = vsdParams['servicetype']
     vni = vsdParams['vni']
     rt = vsdParams['rt']
@@ -18,12 +18,12 @@ def setup_script(vsdParams):
     metadata = vsdParams['metadata']
 # remove trailing space at the end of the metadata
     metadata = metadata.rstrip()
-    print ("VSD metadata" + str(metadata))
+    print("VSD metadata" + str(metadata))
     metadata = dict(e.split('=') for e in metadata.split(','))
-    print ("Modified metadata" + str(metadata))
+    print("Modified metadata" + str(metadata))
     vplsSvc_id = dyn.select_free_id("service-id")
     # vprnSvc_id = dyn.select_free_id("service-id")
-    print ("this are the free svc ids picked up by the system: VPLS:" + vplsSvc_id)
+    print("this are the free svc ids picked up by the system: VPLS:" + vplsSvc_id)
 
     if servicetype == "L2DOMAIN":
         rd = metadata['rd']
@@ -32,8 +32,8 @@ def setup_script(vsdParams):
         # vprn_RT = metadata ['vprnRT']
         # vprn_Lo = metadata ['vprnLo']
         # irb_GW = metadata ['irbGW']
-        print ('servicetype, VPLS id, rt, vni, rd',
-               servicetype, vplsSvc_id, rt, vni, rd)
+        print('servicetype, VPLS id, rt, vni, rd',
+              servicetype, vplsSvc_id, rt, vni, rd)
         dyn.add_cli("""
         configure service
           vpls %(vplsSvc_id)s customer 1 name vpls%(vplsSvc_id)s create
@@ -72,7 +72,7 @@ def setup_script(vsdParams):
 
 
 def teardown_script(setupParams):
-    print ("These are the teardown_script setupParams: " + str(setupParams))
+    print("These are the teardown_script setupParams: " + str(setupParams))
     servicetype = setupParams['servicetype']
     if servicetype == "L2DOMAIN":
         dyn.add_cli("""

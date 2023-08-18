@@ -1,0 +1,165 @@
+---
+# TODO:
+# Check for existing stack or vms
+
+- name: Display if skipping NUH predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping NUH predeploy because it is already present"
+      - "****************************************************"
+  when: node_present
+
+- block:
+
+  - name: Set local variable with upgrade status
+    set_fact:
+      upgrade: "{{ nuage_upgrade|default('False') }}"
+
+  - block:
+    - name: Verify that upgrade_vmname is defined if this is an upgrade
+      assert:
+        that: "upgrade_vmname is defined"
+        msg: "upgrade_vmname is required for upgrade"
+    - name: Set local variable with upgrade_vmname
+      set_fact:
+        vm_name: "{{ upgrade_vmname }}"
+    when: upgrade
+
+  - block:
+    - name: Set local variable with vmname
+      set_fact:
+        vm_name: "{{ vmname }}"
+    when: not upgrade
+
+  - name: Get the public key for the current user
+    command: cat "{{ user_ssh_pub_key }}"
+    changed_when: False
+    delegate_to: localhost
+    register: current_user_ssh_key
+
+  - name: Set local temp directory name
+    set_fact:
+      temp_dir: "./ansible-heat-{{ inventory_hostname }}"
+
+  - name: Create local temp directory
+    file:
+      path: "{{ temp_dir }}"
+      state: directory
+    delegate_to: localhost
+
+  - name: Create heat template
+    template:
+      src: openstack.j2
+      dest: "{{ temp_dir }}/openstack.yml"
+    delegate_to: localhost
+
+  - name: Set heat template location
+    set_fact:
+      nuh_heat_template: "{{ temp_dir }}/openstack.yml"
+
+  - block:
+
+    - name: Setting external interface variable
+      set_fact:
+        ext_ip: "{{ item.external_ip }}"
+        openstack_ext_network: "{{ item.openstack_external_network }}"
+        openstack_ext_subnet: "{{ item.openstack_external_subnet}}"
+      with_items: "{{ external_interfaces }}"
+
+    - name: Setting external peer ip if defined
+      set_fact:
+        ext_peer_ip: "{{ item.external_peer_ip }}"
+      when: item.external_peer_ip  is defined
+      with_items: "{{ external_interfaces }}"
+
+    when: external_interfaces is defined and external_interfaces | length > 0
+
+  - name: Creating first NUH stack
+    register: create_stack
+    os_stack:
+      name: "{{ vm_name }}"
+      template: "{{ nuh_heat_template }}"
+      client_cert: null
+      client_key: null
+      cacert: "{{ openstack_cacert }}"
+      validate_certs: false
+      auth:
+        "{{ openstack_auth }}"
+      parameters:
+        vm_name: "{{ vm_name }}"
+        nuh_image: "{{ openstack_image }}"
+        nuh_flavor: "{{ openstack_flavor }}"
+        nuh_network: "{{ openstack_network }}"
+        nuh_subnet: "{{ openstack_subnet | default('NONE') }}"
+        mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
+        nuh_internal_network: "{{ openstack_internal_network }}"
+        nuh_internal_subnet: "{{ openstack_internal_subnet | default('NONE') }}"
+        internal_ip: "{{ internal_ip | default('NONE') }}"
+        nuh_external_network: "{{ openstack_ext_network }}"
+        nuh_external_subnet: "{{ openstack_ext_subnet | default('NONE') }}"
+        external_ip: "{{ ext_ip | default('NONE') }}" 
+        ssh_key: "{{ current_user_ssh_key.stdout }}"
+    delegate_to: localhost
+    when: inventory_hostname == groups['nuh_first_node'][0] 
+
+  - name: Creating second NUH stack
+    register: create_stack
+    os_stack:
+      name: "{{ vm_name }}"
+      template: "{{ nuh_heat_template }}"
+      client_cert: null
+      client_key: null
+      cacert: "{{ openstack_cacert }}"
+      validate_certs: false
+      auth:
+        "{{ openstack_auth }}"
+      parameters:
+        vm_name: "{{ vm_name }}"
+        nuh_image: "{{ openstack_image }}"
+        nuh_flavor: "{{ openstack_flavor }}"
+        nuh_network: "{{ openstack_network }}"
+        nuh_subnet: "{{ openstack_subnet | default('NONE') }}"
+        mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
+        nuh_internal_network: "{{ openstack_internal_network }}"
+        nuh_internal_subnet: "{{ openstack_internal_subnet | default('NONE') }}"
+        internal_ip: "{{ internal_ip | default('NONE') }}"
+        nuh_external_network: "{{ openstack_ext_network }}"
+        nuh_external_subnet: "{{ openstack_ext_subnet | default('NONE') }}"
+        external_ip: "{{ ext_peer_ip | default('NONE') }}" 
+        ssh_key: "{{ current_user_ssh_key.stdout }}"
+    delegate_to: localhost
+    when: 
+      - nuh_sa_or_ha is match('ha')
+      - inventory_hostname != groups['nuh_first_node'][0] 
+
+  - block: 
+
+    - name: Create ssh directory
+      shell: "sshpass -p {{ nuh_default_password }} ssh -o StrictHostKeyChecking=no {{ nuh_default_username }}@{{ inventory_hostname }} \"mkdir -p /root/.ssh/\""
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      register: output_var
+      retries: 5
+      delay: 10
+      until: output_var.rc == 0
+
+    - name: Create authorized Key file
+      shell: "sshpass -p {{ nuh_default_password }} ssh -o StrictHostKeyChecking=no {{ nuh_default_username }}@{{ inventory_hostname }} \"echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys\""
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      register: sshoutput
+      retries: 5
+      delay: 10
+      until: sshoutput.rc == 0
+      
+    ignore_errors: yes
+    delegate_to: localhost
+
+  - debug: var=create_stack['stack']['outputs'][0]['output_value']
+
+  - name: Remove local temp folder
+    file:
+      path: "{{ temp_dir }}"
+      state: absent
+    delegate_to: localhost
+
+  when: not node_present

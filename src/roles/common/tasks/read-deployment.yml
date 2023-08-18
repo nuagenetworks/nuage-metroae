@@ -78,6 +78,38 @@
     that: "{{ vsds | length in [0, 1, 3, 6] }}"
     msg: "There needs to be exactly 0, 1, 3 or 6 VSDs defined"
 
+- block:
+
+  - name: Validate correct number of VSDs for stats-out
+    assert:
+      that: "{{ vsds | length }} == 6"
+      msg: "When deploying stats-out, there must be exactly 3 statistics_only VSDs and 3 clustered VSDs."
+
+  - name: Build set of stats only VSDs
+    set_fact:
+      stats_only_vsds: "{{ vsds[3:6] | map(attribute='hostname') | list }}"
+
+  - name: Validate correct number of VSTATs for stats-out
+    assert:
+      that: "{{ vstats | length }} >= 6"
+      msg: "When deploying stats-out, there can be 4 or more data VSTATs (ES) and 3 clustered VSTATs."
+
+  - name: Build set of stats only VSDs
+    set_fact:
+      data_vstats: "{{ vstats[3:6] | map(attribute='hostname') | list }}"
+
+  - name: Build set of stats only VSDs
+    set_fact:
+      add_data_vstats: "{{ vstats[6:] | map(attribute='hostname') | list }}"
+    when: vstats | length > 6
+
+  - name: Check for valid stats-out proxy address
+    assert:
+      that: "common.stats_out_proxy is defined or nuhs | default([]) | length > 0"
+      msg: "Missing stats_out_proxy address in common.yml and no NUHs are defined to be used as a proxy."
+
+  when: common.stats_out | default(false)
+
 - name: Validate unique VSD hostnames
   assert:
     that: "{{ vsds | map(attribute='hostname') | unique | list | length }} == {{ vsds | length }}"
@@ -159,10 +191,16 @@
   when: item.cpuset is defined
   with_items: "{{ webfilters }}"
 
+- name: Verify that the TPM has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != {{ tpm_cpu_cores | default(2) }}"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have {{ tpm_cpu_cores | default(2) }} elements."
+  when: item.cpuset is defined
+  with_items: "{{ tpms }}"
+
 - name: Validate that NSGVs ports are properly configured
   assert:
-    that: "{{ item.access_port_name is defined and item.access_ports is undefined }} or
-       {{ item.access_port_name is undefined and item.access_ports is defined }}"
+    that: "{{ not (item.access_port_name is defined and item.access_ports is defined) }}"
     msg: "Incorrect configuration {{ item.vmname }} has both access_port_name and access_ports defined."
   with_items: "{{ nsgvs }}"
 

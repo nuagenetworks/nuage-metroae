@@ -43,6 +43,9 @@
       tasks_from: configure-ovftool
     vars:
       management_network: "VM Network"
+      number_of_cpus: "{{ vsd_cpu_cores }}"
+      memory_size: "{{ vsd_ram }}"
+      diskSize: "{{ vsd_fallocate_size_gb }}"
 
   - name: Deploy VSD image on vCenter
     include_role:
@@ -50,7 +53,7 @@
       tasks_from: vcenter-deploy-image
 
   - name: Waiting until VMware tools becomes available
-    connection: local
+    delegate_to: localhost
     vmware_guest_tools_wait:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -61,8 +64,6 @@
       validate_certs: no
     register: vm_facts
 
-  - debug: var=vm_facts verbosity=1
-
   - name: Set VM UUID
     set_fact:
       uuid: "{{ vm_facts.instance.hw_product_uuid }}"
@@ -70,7 +71,7 @@
   - debug: var=uuid
 
   - name: Turn on autostart
-    connection: local
+    delegate_to: localhost
     vmware_autostart:
       name: "{{ vm_name }}"
       uuid: "{{ uuid }}"
@@ -113,7 +114,7 @@
       vm_password: "{{ vsd_default_password }}"
 
   - name: Reboot VM
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"

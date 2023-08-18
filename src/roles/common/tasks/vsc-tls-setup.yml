@@ -1,4 +1,6 @@
 ---
+- meta: reset_connection
+
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
@@ -9,10 +11,17 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- name: Add proxy setup
+  set_fact:
+    proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
+  when: ssh_proxy_configuration is defined
+
 - block:
   - block:
     - name: Copy external certificates
-      command: "sshpass -p{{ vsc_default_password }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ item }} {{ vsc_default_username }}@{{ mgmt_ip }}:/{{ item | basename }}"
+      command: >-
+        sshpass -p'{{ vsc_default_password }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        {{ proxy_conf | default("") }} {{ item }} {{ vsc_default_username }}@{{ mgmt_ip }}:/{{ item | basename }}
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       with_items:
         - "{{ private_key_path }}"
@@ -57,6 +66,8 @@
       - certificate_path is undefined
       - ca_certificate_path is undefined
 
+  - meta: reset_connection
+
   - name: Configure the security profile on the VSC
     sros_config:
       lines:
@@ -71,6 +82,8 @@
 
 - block:
 
+  - meta: reset_connection
+
   - name: Configure XMPP to use the security profile
     sros_config:
       lines:
@@ -81,6 +94,9 @@
     delegate_to: localhost
 
   - block:
+
+    - meta: reset_connection
+
     - name: Configure XMPP server to the custom ejabberd id and password
       sros_config:
         lines:
@@ -102,6 +118,8 @@
       - ca_certificate_path is defined
       - ejabberd_id is defined
 
+  - meta: reset_connection
+
   - name: check xmpp connectivity between VSC and VSD after enabling TLS
     sros_command:
       commands:
@@ -117,6 +135,8 @@
     debug: var=xmpp_status verbosity=1
 
   when: xmpp_tls
+
+- meta: reset_connection
 
 - name: Configure OpenFlow to use the security profile
   sros_config:

@@ -5,6 +5,7 @@
     "description": "Specify configuration for Nuage VSD stats (VSTAT).",
     "type": "array",
     "widget": "form",
+    "numFormEntries": 6,
     "items": {
         "widget": "item",
         "type": "object",
@@ -72,7 +73,6 @@
                     "vcenter",
                     "aws",
                     "openstack",
-                    "nuagex",
                     "none"
                 ],
                 "description": "Type of hypervisor environment where VMs will be instantiated. Use 'none' when skipping predeploy.",
@@ -83,7 +83,7 @@
                 "type": "string",
                 "format": "hostname",
                 "title": "Target Server IP or FQDN",
-                "description": "Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server",
+                "description": "Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server. When target_server_type is set to openstack, this property is unused and should be set to 0.0.0.0",
                 "sectionEnd": "VM and Target Server",
                 "propertyOrder": 80
             },
@@ -147,8 +147,37 @@
                 "description": "Optional path to a folder defined on vCenter where VM will be instantiated",
                 "default": "(global vCenter VM folder)",
                 "target_server_type": "vcenter",
-                "sectionEnd": "vCenter Parameters",
                 "propertyOrder": 150
+            },
+            "vcenter_host_clusters_folder": {
+                "type": "string",
+                "title": "vCenter Hosts and Clusters Folder",
+                "description": "Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated",
+                "advanced": true,
+                "target_server_type": "vcenter",
+                "propertyOrder": 160
+            },
+            "vcenter_disk_mode": {
+                "type": "string",
+                "title": "vCenter Disk Provision mode",
+                "description": "Disk Provisioning mode for vcenter",
+                "advanced": true,
+                "target_server_type": "vcenter",
+                "default": "thin",
+                "enum": [
+                    "thin",
+                    "thick",
+                    "eagerZeroedThick"
+                ],
+                "sectionEnd": "vCenter Parameters",
+                "propertyOrder": 170
+            },
+            "preserve_vm": {
+                "type": "boolean",
+                "title": "Preserve VSTAT VM",
+                "description": "Shuts down the vm during destroy process, instead of actually deleting them.",
+                "propertyOrder": 180,
+                "advanced": true
             },
             "aws_ami_id": {
                 "type": "string",
@@ -156,7 +185,7 @@
                 "description": "AMI ID for AWS instance",
                 "sectionBegin": "AWS Parameters",
                 "target_server_type": "aws",
-                "propertyOrder": 160
+                "propertyOrder": 190
             },
             "aws_upgrade_ami_id": {
                 "type": "string",
@@ -164,21 +193,21 @@
                 "description": "AMI ID of the upgraded image",
                 "workflow": "upgrade",
                 "target_server_type": "aws",
-                "propertyOrder": 170
+                "propertyOrder": 200
             },
             "aws_instance_type": {
                 "type": "string",
                 "title": "AWS Instance Type",
                 "target_server_type": "aws",
                 "description": "Instance Type of the AWS Instance",
-                "propertyOrder": 180
+                "propertyOrder": 210
             },
             "aws_key_name": {
                 "type": "string",
                 "title": "AWS Keypair Name",
                 "description": "Name of the Keypair used to connect to VPC",
                 "target_server_type": "aws",
-                "propertyOrder": 190
+                "propertyOrder": 220
             },
             "aws_mgmt_eni": {
                 "type": "string",
@@ -187,7 +216,7 @@
                 "title": "AWS Management ENI ID",
                 "description": "ENI ID for VSTAT Instance on Management Subnetwork",
                 "sectionEnd": "AWS Parameters",
-                "propertyOrder": 200
+                "propertyOrder": 230
             },
             "openstack_image": {
                 "type": "string",
@@ -195,42 +224,42 @@
                 "description": "Name of image installed on OpenStack for VSTAT",
                 "target_server_type": "openstack",
                 "sectionBegin": "OpenStack Parameters",
-                "propertyOrder": 210
+                "propertyOrder": 240
             },
             "openstack_flavor": {
                 "type": "string",
                 "title": "OpenStack Flavor",
                 "description": "Name of instance flavor installed on OpenStack for VSTAT",
                 "target_server_type": "openstack",
-                "propertyOrder": 220
+                "propertyOrder": 250
             },
             "openstack_availability_zone": {
                 "type": "string",
                 "title": "OpenStack Availability Zone",
                 "description": "Name of availability zone on OpenStack for VSTAT",
                 "target_server_type": "openstack",
-                "propertyOrder": 230
+                "propertyOrder": 260
             },
             "openstack_network": {
                 "type": "string",
                 "title": "OpenStack Network",
                 "description": "Name of network on OpenStack for VSTAT",
                 "target_server_type": "openstack",
-                "propertyOrder": 240
+                "propertyOrder": 270
             },
             "openstack_subnet": {
                 "type": "string",
                 "title": "OpenStack Subnet",
                 "description": "Name of subnet on OpenStack for VSTAT",
                 "target_server_type": "openstack",
-                "propertyOrder": 250
+                "propertyOrder": 280
             },
             "openstack_port_name": {
                 "type": "string",
                 "title": "OpenStack Port Name",
                 "description": "Name for Mgmt interface",
                 "target_server_type": "openstack",
-                "propertyOrder": 260
+                "propertyOrder": 290
             },
             "openstack_port_security_groups": {
                 "type": "array",
@@ -238,7 +267,7 @@
                 "description": "Set of security groups to associate with Mgmt interface",
                 "target_server_type": "openstack",
                 "sectionEnd": "OpenStack Parameters",
-                "propertyOrder": 270,
+                "propertyOrder": 300,
                 "items": {
                     "type": "string"
                 }
@@ -247,14 +276,14 @@
                 "type": "string",
                 "title": "NFS backup location",
                 "description": "NFS share for copying vstat backups. For example, NFS share should contain both the ip address and shared volume in this form 1.1.1.1:/nfshare",
-                "propertyOrder": 280,
+                "propertyOrder": 310,
                 "sectionBegin": "NFS Backup Configuration"
             },
             "restore_interval": {
                 "type": "integer",
                 "title": "Interval to restore snapshots",
                 "description": "Interval to restore database snapshots, min value is 0 and max value is 60 minutes",
-                "propertyOrder": 290,
+                "propertyOrder": 320,
                 "minimum": 0,
                 "maximum": 60,
                 "default": 5
@@ -263,7 +292,7 @@
                 "type": "integer",
                 "title": "Interval to create snapshots",
                 "description": "Interval to create database snapshots, min value is 0 and max value is 60 minutes",
-                "propertyOrder": 300,
+                "propertyOrder": 330,
                 "minimum": 0,
                 "maximum": 60,
                 "default": 5
@@ -272,7 +301,7 @@
                 "type": "string",
                 "title": "Backup repository name",
                 "description": "Repository name for storing backups",
-                "propertyOrder": 310,
+                "propertyOrder": 340,
                 "sectionEnd": "NFS Backup Configuration"
             },
             "add_extra_disk": {
@@ -280,8 +309,7 @@
                 "title": "Add extra disk",
                 "default": false,
                 "description": "Add a second disk to separate Elasticsearch data from primary image. Disk is added to path /var/lib/elasticsearch on the VSTAT. Supported on KVM only.",
-                "target_server_type": "kvm",
-                "propertyOrder": 320,
+                "propertyOrder": 350,
                 "sectionBegin": "Extra Disk"
             },
             "extra_disk_size_gb": {
@@ -289,8 +317,21 @@
                 "title": "Extra disk size in GB",
                 "description": "Size of the extra disk in GB. Supported on KVM only.",
                 "default": 1000,
-                "target_server_type": "kvm",
-                "propertyOrder": 330
+                "propertyOrder": 360
+            },
+            "extra_disk_device": {
+                "type": "string",
+                "title": "Extra Disk Device",
+                "description": "Device for extra disk",
+                "default": "vdb",
+                "propertyOrder": 370
+            },
+            "extra_disk_mount_point": {
+                 "type": "string",
+                 "title": "Extra Disk Mount Point",
+                 "description": "Mount point for extra disk",
+                 "default": "/var/lib/elasticsearch/",
+                 "propertyOrder": 380
             },
             "extra_disk_image_path": {
                 "type": "string",
@@ -298,7 +339,7 @@
                 "description": "Path on the hypervisor to store the extra disk image. Supported on KVM only.",
                 "default": "/var/lib/libvirt/images",
                 "target_server_type": "kvm",
-                "propertyOrder": 340
+                "propertyOrder": 390
             },
             "extra_disk_image_file_name": {
                 "type": "string",
@@ -306,14 +347,14 @@
                 "description": "Name of the extra disk image file. Supported on KVM only.",
                 "default": "extra-disk-(hostname)",
                 "target_server_type": "kvm",
-                "propertyOrder": 350,
+                "propertyOrder": 400,
                 "sectionEnd": "Extra Disk"
             },
             "cpuset": {
                 "type": "array",
                 "title": "KVM cpuset information",
                 "description": "Cpuset information for cpu pinning on KVM. For example, VSTAT requires 6 cores and sample values will be of the form [ 0, 1, 2, 3, 4, 5 ]",
-                "propertyOrder": 360,
+                "propertyOrder": 410,
                 "advanced": true,
                 "target_server_type": "kvm",
                 "sectionBegin": "Other configuration",
@@ -326,7 +367,7 @@
                 "title": "Enable VSS UI",
                 "default": false,
                 "description": "Enable the setup of the Virtualized Security Services UI",
-                "propertyOrder": 370,
+                "propertyOrder": 420,
                 "advanced": true
             },
             "health_monitoring_agent": {
@@ -334,7 +375,7 @@
                 "title": "Health monitoring agent",
                 "description": "Enables setup of a health monitoring agent",
                 "default": "none",
-                "propertyOrder": 380,
+                "propertyOrder": 430,
                 "advanced": true,
                 "enum": [
                     "none",
@@ -345,9 +386,72 @@
                 "type": "string",
                 "title": "Credentials set name",
                 "description": "Name of the credentials set for the vsd",
-                "propertyOrder": 390,
+                "propertyOrder": 440,
                 "sectionEnd": "Other configuration",
                 "advanced": true
+            },
+            "vstat_ram": {
+                "type": "integer",
+                "title": "VSTAT RAM",
+                "description": "Valid for only KVM and VCenter deployments. Amount of VSTAT RAM to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
+                "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
+                "default": "(global VSTAT RAM)",
+                "minimum": 0,
+                "propertyOrder": 450,
+                "sectionBegin": "VSTAT RAM, CPU and Disk Parameters",
+                "advanced": true
+            },
+            "vstat_cpu_cores": {
+                "type": "integer",
+                "title": "VSTAT CPU cores",
+                "description": "Valid for only KVM and VCenter deployments. Number of CPU's for VSTAT.",
+                "advanced": true,
+                "propertyOrder": 460,
+                "default": "(global VSTAT CPU)"
+            },
+            "vstat_allocate_size_gb": {
+                "type": "integer",
+                "title": "VSTAT Disk Size",
+                "description": "Amount of VSTAT disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.",
+                "default": "(global VSTAT DISK)",
+                "minimum": 0,
+                "sectionEnd": "VSTAT RAM, CPU and Disk Parameters",
+                "propertyOrder": 470,
+                "advanced": true
+            },
+            "add_volume": {
+                "type": "boolean",
+                "title": "Add volume",
+                "default": false,
+                "description": "Add an additional volume to Elastic Search Nodes. Supported on OpenStack only.",
+                "sectionBegin": "OpenStack Volume Parameters",
+                "target_server_type": "openstack",
+                "propertyOrder": 480
+            },
+            "volume_name": {
+                "type": "string",
+                "title": "Volume Name",
+                "default": "volume",
+                "description": "Name of the volume added to Elastic Search Nodes. Different name is required for multiple vstat deployment. Supported on OpenStack only.",
+                "target_server_type": "openstack",
+                "propertyOrder": 490
+            },
+            "volume_size_gb": {
+                "type": "integer",
+                "title": "Volume Size",
+                "default": 40,
+                "description": "Size of the volume added to Elastic Search Nodes. Supported on OpenStack only.",
+                "target_server_type": "openstack",
+                "propertyOrder": 500
+            },
+            "volume_device": {
+                "type": "string",
+                "title": "Volume Device",
+                "description": "Device for volume to be attached to",
+                "default": "vdb",
+                "target_server_type": "openstack",
+                "sectionEnd": "OpenStack Volume Parameters",
+                "propertyOrder": 510
             }
         },
         "required": [

@@ -22,6 +22,8 @@
       tasks_from: configure-ovftool
     vars:
       management_network: "Management"
+      number_of_cpus: "{{ vnsutil_cpu_cores }}"
+      memory_size: "{{ vnsutil_ram }}"
 
   - name: Deploy VNSUTIL image on vCenter
     include_role:
@@ -29,7 +31,7 @@
       tasks_from: vcenter-deploy-image
 
   - name: Waiting until VMware tools becomes available
-    connection: local
+    delegate_to: localhost
     vmware_guest_tools_wait:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -74,7 +76,7 @@
       vm_password: "{{ vnsutil_default_password }}"
 
   - name: Disable NetworkManager
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -89,7 +91,7 @@
       vm_shell_args: " disable NetworkManager"
 
   - name: Reboot VNSUTIL VM
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"

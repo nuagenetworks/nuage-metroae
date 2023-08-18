@@ -1,0 +1,24 @@
+- block:
+
+  - name: Create directory to export
+    file:
+      path: "{{ mount_directory_location }}/es-backup"
+      mode: 0777
+      state: directory
+
+  - name: Edit /etc/exports file to make an entry of directory
+    shell: "echo \"# ES storage\" >> /etc/exports | echo \"{{ mount_directory_location }}/es-backup/            10.0.0.0/8(rw,sync,no_root_squash,no_subtree_check)\" >> /etc/exports"
+
+  - name: Export the shared directories
+    command: exportfs -a
+
+  - name: Check that exported content
+    command: exportfs -v
+    register: nfs_status
+
+  - name: Check NFS Server Configuration
+    assert:
+      that: "'{{ nfs_status.stdout }}' == '{{ mount_directory_location }}/es-backup\t10.0.0.0/8(sync,wdelay,hide,no_subtree_check,sec=sys,rw,no_root_squash,no_all_squash)'"
+      msg: "Error in NFS Server Configuration in /etc/exports file(invalid entry of directory)"
+
+  remote_user: "{{ nfs_custom_username | default(nfs_default_username) }}"

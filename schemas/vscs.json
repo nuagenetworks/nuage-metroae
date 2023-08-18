@@ -5,6 +5,7 @@
     "description": "Specify configuration for Nuage VSCs.",
     "type": "array",
     "widget": "form",
+    "numFormEntries": 2,
     "items": {
         "widget": "item",
         "type": "object",
@@ -100,12 +101,12 @@
             "ctrl_ip_vprn_list":{
                 "type": "array",
                 "title": "List of control IP VPRNs",
-                "description": "Comma Seperated list of control IP VPRNs. Each item in list is of format VLAN_ID:Control_IP_ADDR/NETMASK_LENGTH . Both Control IP address and Netmask length are optional",
+                "description": "Comma Seperated list of control IP VPRNs. Each item in list is of format VLAN_ID:Control_IP_ADDR/NETMASK_LENGTH:NEXT_HOP . Control IP address, netmask length and next hop are optional",
                 "sectionEnd": "Control Network",
                 "propertyOrder": 100,
                 "items": {
                     "type": "string",
-                    "pattern": "[0-9]{1,4}(:\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b)?"
+                    "pattern": "^\\d{1,4}(:(\\d{1,3}[.]){3}\\d{1,3})?([/]\\d{1,2})?(:(\\d{1,3}[.]){3}\\d{1,3})?$"
                 }
             },
             "system_ip": {
@@ -120,13 +121,21 @@
                 "sectionBegin": "System info",
                 "propertyOrder": 110
             },
+            "router_id": {
+                "type": "string",
+                "format": "ipv4",
+                "default": "(System IP)",
+                "title": "Router ID",
+                "description": "The router ID of this VSC in IPV4 address format. Required when system_ip is IPV6.",
+                "propertyOrder": 120
+            },
             "vmname": {
                 "type": "string",
                 "format": "hostname",
                 "title": "VM name",
                 "default": "(Hostname)",
                 "description": "Name of the virtual machine on the Hypervisor/vCenter Server.",
-                "propertyOrder": 120
+                "propertyOrder": 130
             },
             "system_name": {
                 "type": "string",
@@ -134,7 +143,7 @@
                 "default": "(Hostname)",
                 "description": "Name of the system if other than hostname",
                 "advanced": true,
-                "propertyOrder": 130
+                "propertyOrder": 140
             },
             "xmpp_username": {
                 "type": "string",
@@ -142,7 +151,7 @@
                 "title": "XMPP username",
                 "description": "Unique username used to identify this VSC in its XMPP connection with VSD",
                 "sectionEnd": "System info",
-                "propertyOrder": 140
+                "propertyOrder": 150
             },
             "target_server_type": {
                 "type": "string",
@@ -150,21 +159,20 @@
                     "kvm",
                     "vcenter",
                     "openstack",
-                    "nuagex",
                     "none"
                 ],
                 "title": "Target Server type",
                 "description": "Type of hypervisor environment where VMs will be instantiated. Use 'none' when skipping predeploy.",
                 "sectionBegin": "Target Server",
-                "propertyOrder": 150
+                "propertyOrder": 160
             },
             "target_server": {
                 "type": "string",
                 "format": "hostname",
                 "title": "Target Server IP or FQDN",
-                "description": "Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server",
+                "description": "Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server. When target_server_type is set to openstack, this property is unused and should be set to 0.0.0.0",
                 "sectionEnd": "Target Server",
-                "propertyOrder": 160
+                "propertyOrder": 170
             },
             "mgmt_bridge": {
                 "type": "string",
@@ -173,7 +181,7 @@
                 "description": "Network Bridge used for the management interface of a component or the BOF interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. This field can be overridden by defining the management network bridge separately in the component configuration. Defaults to the global setting",
                 "advanced": true,
                 "sectionBegin": "Bridges and Private IP",
-                "propertyOrder": 170
+                "propertyOrder": 180
             },
             "data_bridge": {
                 "type": "string",
@@ -181,7 +189,7 @@
                 "title": "Data Network Bridge",
                 "description": "Network Bridge used for the data path of a component or the Control interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM.",
                 "advanced": true,
-                "propertyOrder": 180
+                "propertyOrder": 190
             },
             "vsd_fqdn": {
                 "type": "string",
@@ -189,7 +197,7 @@
                 "format": "hostname",
                 "description": "FQDN of the VSD or VSD cluster for this VSC",
                 "advanced": true,
-                "propertyOrder": 190
+                "propertyOrder": 200
             },
             "internal_mgmt_ip": {
                 "type": "string",
@@ -197,7 +205,7 @@
                 "title": "Private Management IP",
                 "advanced": true,
                 "description": "Private Management IP Address of VSC instances",
-                "propertyOrder": 200
+                "propertyOrder": 210
             },
             "internal_ctrl_ip": {
                 "type": "string",
@@ -205,15 +213,18 @@
                 "title": "Private Control IP Address",
                 "advanced": true,
                 "description": "Private Control IP Address of VSC Instances",
-                "propertyOrder": 210
+                "propertyOrder": 220
             },
             "internal_data_gateway_ip": {
                 "type": "string",
-                "format": "ipv4",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
                 "title": "Private Data Gateway IP Address",
                 "advanced": true,
                 "description": "Private Data Gateway IP Address of VSC Instances",
-                "propertyOrder": 220
+                "propertyOrder": 230
             },
             "route_reflector_ip_list":{
                 "type": "array",
@@ -221,11 +232,40 @@
                 "description": "List of route reflector IP addresses if present",
                 "sectionEnd": "Bridges and Private IP",
                 "advanced": true,
-                "propertyOrder": 230,
+                "propertyOrder": 240,
                 "items": {
                     "type": "string",
                     "format": "ipv4"
                 }
+            },
+            "bgp_interface_ip_address": {
+                "type": "string",
+                "format": "ipv4",
+                "title": "BGP Interface IP Address",
+                "advanced": true,
+                "description": "IP Address for Optional BGP Interface",
+                "propertyOrder": 250,
+                "sectionBegin": "BGP Interface"
+            },
+            "bgp_interface_ip_prefix":{
+                "type": "integer",
+                "title": "BGP Interface Prefix length",
+                "description": "Prefix length for the optional BGP interface",
+                "minimum": 0,
+                "maximum": 32,
+                "default": 24,
+                "propertyOrder": 260
+            },
+            "bgp_interface_vlan_id": {
+                "type": "integer",
+                "title": "BGP Interface VLAN ID",
+                "description": "VLAN ID for the optional BGP interface",
+                "minimum": 0,
+                "maximum": 4096,
+                "default": 1000,
+                "advanced": true,
+                "propertyOrder": 270,
+                "sectionEnd": "BGP Interface"
             },
             "vcenter_datacenter": {
                 "type": "string",
@@ -235,7 +275,7 @@
                 "target_server_type": "vcenter",
                 "advanced": true,
                 "sectionBegin": "vCenter Parameters",
-                "propertyOrder": 240
+                "propertyOrder": 280
             },
             "vcenter_cluster": {
                 "type": "string",
@@ -244,7 +284,7 @@
                 "default": "(global vCenter Cluster Name)",
                 "target_server_type": "vcenter",
                 "advanced": true,
-                "propertyOrder": 250
+                "propertyOrder": 290
             },
             "vcenter_host_reference": {
                 "type": "string",
@@ -253,7 +293,7 @@
                 "description": "Requires ovftool 4.3. Reference to the host on the vCenter cluster on which to deploy Nuage components",
                 "target_server_type": "vcenter",
                 "advanced": true,
-                "propertyOrder": 260
+                "propertyOrder": 300
             },
             "vcenter_datastore": {
                 "type": "string",
@@ -262,7 +302,7 @@
                 "default": "(global vCenter Datastore Name)",
                 "target_server_type": "vcenter",
                 "advanced": true,
-                "propertyOrder": 270
+                "propertyOrder": 310
             },
             "vcenter_vmfolder": {
                 "type": "string",
@@ -270,8 +310,16 @@
                 "description": "Optional path to a folder defined on vCenter where VM will be instantiated",
                 "default": "(global vCenter VM folder)",
                 "target_server_type": "vcenter",
+                "propertyOrder": 320
+            },
+            "vcenter_host_clusters_folder": {
+                "type": "string",
+                "title": "vCenter Hosts and Clusters Folder",
+                "description": "Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated",
                 "sectionEnd": "vCenter Parameters",
-                "propertyOrder": 280
+                "advanced": true,
+                "target_server_type": "vcenter",
+                "propertyOrder": 330
             },
             "openstack_image": {
                 "type": "string",
@@ -279,49 +327,49 @@
                 "description": "Name of image installed on OpenStack for VSC",
                 "target_server_type": "openstack",
                 "sectionBegin": "OpenStack Parameters",
-                "propertyOrder": 290
+                "propertyOrder": 340
             },
             "openstack_flavor": {
                 "type": "string",
                 "title": "OpenStack Flavor",
                 "description": "Name of instance flavor installed on OpenStack for VSC",
                 "target_server_type": "openstack",
-                "propertyOrder": 300
+                "propertyOrder": 350
             },
             "openstack_availability_zone": {
                 "type": "string",
                 "title": "OpenStack Availability Zone",
                 "description": "Name of availability zone on OpenStack for VSC",
                 "target_server_type": "openstack",
-                "propertyOrder": 310
+                "propertyOrder": 360
             },
             "openstack_mgmt_network": {
                 "type": "string",
                 "title": "OpenStack Mgmt Network",
                 "description": "Name of management network on OpenStack for VSC",
                 "target_server_type": "openstack",
-                "propertyOrder": 320
+                "propertyOrder": 370
             },
             "openstack_mgmt_subnet": {
                 "type": "string",
                 "title": "OpenStack Mgmt Subnet",
                 "description": "Name of management subnet on OpenStack for VSC",
                 "target_server_type": "openstack",
-                "propertyOrder": 330
+                "propertyOrder": 380
             },
             "openstack_mgmt_port_name": {
                 "type": "string",
                 "title": "OpenStack Mgmt Port Name",
                 "description": "Name for Mgmt interface",
                 "target_server_type": "openstack",
-                "propertyOrder": 340
+                "propertyOrder": 390
             },
             "openstack_mgmt_port_security_groups": {
                 "type": "array",
                 "title": "OpenStack Mgmt Port Security Groups",
                 "description": "Set of security groups to associate with Mgmt interface",
                 "target_server_type": "openstack",
-                "propertyOrder": 350,
+                "propertyOrder": 400,
                 "items": {
                     "type": "string"
                 }
@@ -331,38 +379,210 @@
                 "title": "OpenStack Control Network",
                 "description": "Name of control network on OpenStack for VSC",
                 "target_server_type": "openstack",
-                "propertyOrder": 360
+                "propertyOrder": 410
             },
             "openstack_control_subnet": {
                 "type": "string",
                 "title": "OpenStack Control Subnet",
                 "description": "Name of control subnet on OpenStack for VSC",
                 "target_server_type": "openstack",
-                "propertyOrder": 370
+                "propertyOrder": 420
+            },
+            "vsc_trunk_name": {
+                "type": "string",
+                "title": "VSC Trunk Name",
+                "description": "Name of the trunk to be setup between control port and its underlay ports",
+                "target_server_type": "openstack",
+                "propertyOrder": 430
+            },
+            "openstack_external_network1": {
+                "type": "string",
+                "title": "OpenStack first External Network",
+                "description": "Name of first external network on OpenStack for VSC",
+                "target_server_type": "openstack",
+                "propertyOrder": 440
+            },
+            "openstack_external_subnet1": {
+                "type": "string",
+                "title": "OpenStack first External Subnet",
+                "description": "Name of first external subnet on OpenStack for VSC",
+                "target_server_type": "openstack",
+                "propertyOrder": 450
+            },
+            "openstack_external_network2": {
+                "type": "string",
+                "title": "OpenStack second External Network",
+                "description": "Name of second external network on OpenStack for VSC",
+                "target_server_type": "openstack",
+                "propertyOrder": 460
+            },
+            "openstack_external_subnet2": {
+                "type": "string",
+                "title": "OpenStack second External Subnet",
+                "description": "Name of second external subnet on OpenStack for VSC",
+                "target_server_type": "openstack",
+                "propertyOrder": 470
+            },
+            "openstack_external_network3": {
+                "type": "string",
+                "title": "OpenStack third External Network",
+                "description": "Name of third external network on OpenStack for VSC",
+                "target_server_type": "openstack",
+                "propertyOrder": 480
+            },
+            "openstack_external_subnet3": {
+                "type": "string",
+                "title": "OpenStack third External Subnet",
+                "description": "Name of third external subnet on OpenStack for VSC",
+                "target_server_type": "openstack",
+                "propertyOrder": 490
             },
             "openstack_control_port_name": {
                 "type": "string",
                 "title": "OpenStack Control Port Name",
                 "description": "Name for Control interface",
                 "target_server_type": "openstack",
-                "propertyOrder": 380
+                "propertyOrder": 500
             },
             "openstack_control_port_security_groups": {
                 "type": "array",
                 "title": "OpenStack Control Port Security Groups",
                 "description": "Set of security groups to associate with Control interface",
                 "target_server_type": "openstack",
-                "propertyOrder": 390,
+                "propertyOrder": 510,
                 "items": {
                     "type": "string"
                 }
+            },
+            "openstack_external_port1_name": {
+                "type": "string",
+                "title": "OpenStack first External Port Name",
+                "description": "Name for first external port interface",
+                "target_server_type": "openstack",
+                "propertyOrder": 520
+            },
+            "openstack_external_port1_security_groups": {
+                "type": "array",
+                "title": "OpenStack first External Port Security Groups",
+                "description": "Set of security groups to associate with first external interface",
+                "target_server_type": "openstack",
+                "propertyOrder": 530,
+                "items": {
+                    "type": "string"
+                }
+            },
+            "openstack_external_port2_name": {
+                "type": "string",
+                "title": "OpenStack second External Port Name",
+                "description": "Name for second external port interface",
+                "target_server_type": "openstack",
+                "propertyOrder": 540
+            },
+            "openstack_external_port2_security_groups": {
+                "type": "array",
+                "title": "OpenStack second External Port Security Groups",
+                "description": "Set of security groups to associate with second external interface",
+                "target_server_type": "openstack",
+                "propertyOrder": 550,
+                "items": {
+                    "type": "string"
+                }
+            },
+            "openstack_external_port3_name": {
+                "type": "string",
+                "title": "OpenStack third External Port Name",
+                "description": "Name for third external port interface",
+                "target_server_type": "openstack",
+                "propertyOrder": 560
+            },
+            "openstack_external_port3_security_groups": {
+                "type": "array",
+                "title": "OpenStack first External Port Security Groups",
+                "description": "Set of security groups to associate with first external interface",
+                "target_server_type": "openstack",
+                "propertyOrder": 570,
+                "items": {
+                    "type": "string"
+                }
+            },
+            "external_ip1": {
+                "type": "string",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
+                "title": "First External IP address",
+                "description": "The first External IP address of the controller",
+                "propertyOrder": 580
+            },
+            "external_ip1_prefix": {
+                "type": "integer",
+                "title": "First External Netmask Prefix Length",
+                "description": "First External network prefix length",
+                "minimum": 0,
+                "maximum": 128,
+                "propertyOrder": 590
+            },
+            "external_ip2": {
+                "type": "string",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
+                "title": "Second External IP address",
+                "description": "The second External IP address of the controller",
+                "propertyOrder": 600
+            },
+            "external_ip2_prefix": {
+                "type": "integer",
+                "title": "Second External Netmask Prefix Length",
+                "description": "Second External network prefix length",
+                "minimum": 0,
+                "maximum": 128,
+                "propertyOrder": 610
+            },
+            "external_ip3": {
+                "type": "string",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
+                "title": "Third External IP address",
+                "description": "The third External IP address of the controller",
+                "propertyOrder": 620
+            },
+            "external_ip3_prefix": {
+                "type": "integer",
+                "title": "Third External Netmask Prefix Length",
+                "description": "Third External network prefix length",
+                "minimum": 0,
+                "maximum": 128,
+                "propertyOrder": 630
+            },
+            "segmentation_id1": {
+                "type": "integer",
+                "title": "First External Port's Segmentation Id",
+                "description": "Segmentation id of first external port to be used during trunking",
+                "propertyOrder": 640
+            },
+            "segmentation_id2": {
+                "type": "integer",
+                "title": "Second External Port's Segmentation Id",
+                "description": "Segmentation id of first external port to be used during trunking",
+                "propertyOrder": 650
+            },
+            "segmentation_id3": {
+                "type": "integer",
+                "title": "Third External Port's Segmentation Id",
+                "description": "Segmentation id of third external port to be used during trunking",
+                "propertyOrder": 660
             },
             "openstack_port_name": {
                 "type": "string",
                 "title": "OpenStack Port Name",
                 "description": "Name for Mgmt interface",
                 "target_server_type": "openstack",
-                "propertyOrder": 400
+                "propertyOrder": 670
             },
             "openstack_port_security_groups": {
                 "type": "array",
@@ -370,7 +590,7 @@
                 "description": "Set of security groups to associate with Mgmt interface",
                 "target_server_type": "openstack",
                 "sectionEnd": "OpenStack Parameters",
-                "propertyOrder": 410,
+                "propertyOrder": 680,
                 "items": {
                     "type": "string"
                 }
@@ -383,7 +603,7 @@
                 "title": "Expected number of BGP neighbors",
                 "description": "Used in postdeploy and health workflows as expected values if non-zero",
                 "sectionBegin": "Health Parameters",
-                "propertyOrder": 420
+                "propertyOrder": 690
             },
             "expected_num_vswitches": {
                 "type": "integer",
@@ -392,7 +612,7 @@
                 "advanced": true,
                 "title": "Expected number of vswitches",
                 "description": "Used in postdeploy and health workflows as expected values if non-zero",
-                "propertyOrder": 430
+                "propertyOrder": 700
             },
             "expected_num_host_vports": {
                 "type": "integer",
@@ -401,7 +621,7 @@
                 "advanced": true,
                 "title": "Expected number of host vports",
                 "description": "Used in postdeploy and health workflows as expected values if non-zero",
-                "propertyOrder": 440
+                "propertyOrder": 710
             },
             "expected_num_vm_vports": {
                 "type": "integer",
@@ -410,7 +630,7 @@
                 "advanced": true,
                 "title": "Expected number of VM vports",
                 "description": "Used in postdeploy and health workflows as expected values if non-zero",
-                "propertyOrder": 450
+                "propertyOrder": 720
             },
             "expected_num_gateway_ports": {
                 "type": "integer",
@@ -420,13 +640,13 @@
                 "title": "Expected number of gateway ports",
                 "description": "Used in postdeploy and health workflows as expected values if non-zero",
                 "sectionEnd": "Health Parameters",
-                "propertyOrder": 460
+                "propertyOrder": 730
             },
             "ejabberd_id": {
                 "type": "string",
                 "title": "Ejabberd user id",
                 "description": "Ejabberd user id used to create the certificate",
-                "propertyOrder": 470,
+                "propertyOrder": 740,
                 "sectionBegin": "Certificates and credentials",
                 "advanced": true
             },
@@ -434,28 +654,28 @@
                 "type": "string",
                 "title": "Private key path",
                 "description": "Path to VSC certificate key pem file",
-                "propertyOrder": 480,
+                "propertyOrder": 750,
                 "advanced": true
             },
             "certificate_path": {
                 "type": "string",
                 "title": "Certificate path",
                 "description": "Path to VSC certificate pem file",
-                "propertyOrder": 490,
+                "propertyOrder": 760,
                 "advanced": true
             },
             "ca_certificate_path": {
                 "type": "string",
                 "title": "CA certificate path",
                 "description": "Path to CA certificate pem file",
-                "propertyOrder": 500,
+                "propertyOrder": 770,
                 "advanced": true
             },
             "xmpp_domain": {
                 "type": "string",
                 "title": "XMPP domain",
                 "description": "XMPP domain used in custom certificates",
-                "propertyOrder": 510,
+                "propertyOrder": 780,
                 "advanced": true
             },
             "credentials_set": {
@@ -463,14 +683,14 @@
                 "title": "Credentials set name",
                 "description": "Name of the credentials set for the vsc",
                 "sectionEnd": "Certificates and credentials",
-                "propertyOrder": 520,
+                "propertyOrder": 790,
                 "advanced": true
             },
             "cpuset": {
                 "type": "array",
                 "title": "KVM cpuset information",
                 "description": "Cpuset information for cpu pinning on KVM. For example, VSC requires 4 cores and sample values will be of the form [ 0, 1, 2, 3 ]",
-                "propertyOrder": 530,
+                "propertyOrder": 800,
                 "advanced": true,
                 "sectionBegin": "VSC Options",
                 "target_server_type": "kvm",
@@ -484,7 +704,7 @@
                 "advanced": true,
                 "title": "Harden VSC",
                 "description": "Enables hardening configuration on VSC",
-                "propertyOrder": 540
+                "propertyOrder": 810
             },
             "vsc_config_file_paths": {
                 "type": "array",
@@ -494,8 +714,16 @@
                 "items": {
                   "type": "string"
                 },
+                "propertyOrder": 820
+            },
+            "override_vsc_config": {
+                "type": "boolean",
+                "title": "Override the configuration on VSC",
+                "default": false,
+                "description": "This will override the Metro Provided config on the VSC by the config provided in vsc_config_file_paths",
+                "advanced": true,
                 "sectionEnd": "VSC Options",
-                "propertyOrder": 550
+                "propertyOrder": 830
             }
         },
         "required": [
@@ -503,8 +731,7 @@
             "target_server",
             "mgmt_ip",
             "mgmt_ip_prefix",
-            "mgmt_gateway",
-            "system_ip"
+            "mgmt_gateway"
         ]
     }
 }

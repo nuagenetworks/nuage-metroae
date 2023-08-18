@@ -1,17 +1,31 @@
 ---
 - hosts: localhost
   pre_tasks:
-    - name: Check for Ansible version
+    - name: Get Ansible version
+      shell:
+        cmd: pip3 freeze | grep -w ansible
+      register: ansible_info
+
+    - name: Extract Ansible version from output
+      set_fact:
+        version_ansible: "{{ ansible_info.stdout | regex_search('[^=].\\d.+\\d') }}"
+
+    - name: Check Ansible version
       assert:
-        that: "ansible_version.full is version('2.9.2', operator='ge', strict=True)"
-        msg: "Ansible version must be greater than or equal to 2.9.2. Found Ansible version {{ansible_version.full}}"
+        that: "version_ansible is version('3.4.0', operator='ge', strict=True)"
+        msg: "Ansible version must be greater than or equal to 3.4.0. Found Ansible version {{ version_ansible }}"
+
+    - name: Check Ansible base version
+      assert:
+        that: "ansible_version.full is version('2.10.15', operator='ge', strict=True)"
+        msg: "Ansible base version must be greater than or equal to 2.10.15. Found Ansible base version {{ ansible_version.full }}"
 
     - name: Get Paramiko version
       shell:
-        cmd: pip freeze | grep paramiko
+        cmd: pip3 freeze | grep paramiko
       register: paramiko_info
 
-    - name: Extract version from output
+    - name: Extract Paramiko version from output
       set_fact:
         paramiko_version: "{{ paramiko_info.stdout | regex_search('[^=].\\d.+\\d') }}"
 
@@ -81,10 +95,26 @@
 
       when: is_deployment_changed
 
-    - name: Verify that inventory can be read successfully
+    - name: checking for the inventory file
+      stat:
+        path: "{{ inventory_dir }}/group_vars/all"
+      register: group_vars_file
+      ignore_errors: True
+
+    - name: Print message about inventory file present or not
+      assert:
+        that:
+          - group_vars_file.stat.exists
+        fail_msg: "{{ inventory_dir }}/group_vars/all file does not exist"
+        success_msg: "{{ inventory_dir }}/group_vars/all file exist"
+
+    - name: load inventory file values to include_vars
       include_vars: "{{ inventory_dir }}/group_vars/all"
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
-    - name: Verify passwords can be decrypted
-      debug: var=vsd_auth
-      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    - name: checking variable, if vsd_auth is defined or not
+      assert:
+        that:
+          - vsd_auth is defined
+        fail_msg: "vsd_auth not defined"
+        success_msg: "vsd_auth is defined"

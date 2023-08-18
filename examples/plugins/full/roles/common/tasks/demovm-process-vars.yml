@@ -1,0 +1,80 @@
+---
+- block: #DEMOVM
+
+  - block:
+
+    - name: Set DEMO VMs QCOW2 location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "demovm-*.qcow2"
+
+    - name: Register DEMO VMs QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
+    when: demovms | map(attribute='target_server_type') | list is issuperset(["kvm"])
+
+  - block:
+
+    - name: Set DEMO VMs OVA location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "demovm-*.ova"
+
+    - name: Register DEMO VMs OVA variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
+    when: demovms | map(attribute='target_server_type') | list is issuperset(["vcenter"])
+
+  - name: Verify DEMO VM management gateway is in correct IP range
+    include_role:
+      name: common
+      tasks_from: check-ip-in-range.yml
+    vars:
+      ip_address: "{{ item.mgmt_gateway }}"
+      netaddr: "{{ item.mgmt_ip }}"
+      netmask: "{{ item.mgmt_ip_prefix }}"
+    with_items: "{{ demovms }}"
+
+  - name: Create host_vars files for demovms
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: demovm
+      component_hostname: "{{ component.hostname }}"
+    loop_control:
+      loop_var: component
+    with_items: "{{ demovms }}"
+
+  - name: Verify DEMO VMs DNS entries exist and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ demovms }}"
+    when: common.dns_server_list | length > 0
+
+  - name: Verify if DEMO VMs data FQDN maps to the proper data IP
+    include_tasks: check-dns-data.yml
+    with_items: "{{ demovms }}"
+
+  - name: Create hosts snippet for demovms
+    set_fact:
+      demovm_hosts: "{{ lookup('template', 'demovm_hosts.j2') }}"
+
+  - name: Append content to plugin hosts
+    set_fact:
+      plugin_hosts: |
+        {{ plugin_hosts }}
+
+        {{ demovm_hosts }}
+
+  when:
+    - demovms is defined and demovms|length > 0
+  tags:
+    - demovms

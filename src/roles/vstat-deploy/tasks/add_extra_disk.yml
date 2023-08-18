@@ -1,16 +1,79 @@
 - block:
 
   - name: Create extra disk partition
-    command: "parted -s /dev/{{ extra_disk_device }}  mklabel gpt  mkpart primary 0GB {{ extra_disk_size_gb }}GB"
+    parted:
+      device: "/dev/{{ extra_disk_device }}"
+      number: 1
+      state: present
+      label: gpt
+      part_end: "{{ extra_disk_size_gb }}GB"
+      unit: GB
 
   - name: Format extra disk partition
-    command: "mkfs.ext4 /dev/{{ extra_disk_device }}1"
+    filesystem:
+      dev: "/dev/{{ extra_disk_device }}1"
+      fstype: ext4
+
+  - block:
+
+    - name: Create extra disk mount point directory
+      file:
+        path: "{{ extra_disk_mount_point }}"
+        state: directory
+
+    - name: Copy files to mount point
+      copy:
+        src: "/var/lib/elasticsearch"
+        dest: "{{ extra_disk_mount_point }}/"
+        remote_src: yes
+
+    when: extra_disk_mount_point | default("/var/lib/elasticsearch/") is not match("/var/lib/elasticsearch/")
 
   - name: Mount the extra disk
-    command: "mount /dev/{{ extra_disk_device }}1 {{ extra_disk_mount_point }}"
+    mount:
+      src: "/dev/{{ extra_disk_device }}1"
+      path: "{{ extra_disk_mount_point }}"
+      fstype: ext4
+      state: mounted
+
+  - name: Get extra disk mount device
+    shell: "df -ah | grep {{ extra_disk_mount_point | regex_replace('\\/$', '') }} | awk '{print $1}'"
+    register: mount_device
+
+  - name: Verify extra disk mount device is correct
+    assert:
+      that: "mount_device.stdout is match('/dev/{{ extra_disk_device }}1')"
+      msg: "{{ extra_disk_mount_point }} is not mounted on {{ extra_disk_device }}. Please try again."
+
+  - block:
+
+    - name: Verify elasticsearch is stopped
+      systemd:
+        state: stopped
+        name: elasticsearch
+
+    - name: Update data directory for elasticsearch
+      lineinfile:
+        path: /etc/sysconfig/elasticsearch
+        line: "DATA_DIR={{ extra_disk_mount_point }}/elasticsearch"
+        regexp: 'DATA_DIR='
+
+    - name: Remove previous data directory
+      file:
+        path: /var/lib/elasticsearch
+        state: absent
+
+    when:
+      - groups['data_vstats'] is defined and inventory_hostname in groups['data_vstats']
+      - extra_disk_mount_point | default("/var/lib/elasticsearch/") is not match("/var/lib/elasticsearch/")
 
   - name: Set ownership for the extra disk
-    command: "chown -R elasticsearch:elasticsearch {{ extra_disk_mount_point }}"
+    file:
+      path: "{{ extra_disk_mount_point }}"
+      recurse: yes
+      state: directory
+      owner: elasticsearch
+      group: elasticsearch
 
   when: add_extra_disk | default(False)
   remote_user: "{{ vstat_default_username }}"

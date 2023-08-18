@@ -25,14 +25,14 @@
       create_zfb_profile:
         nsgv_path: "{{ mktemp_output.path }}"
         fact_name: nsgv_already_configured
-        vsd_license_file: "{{ vsd_license_file }}"
+        vsd_license_file: "{{ vsd_license_file | default(None) }}"
         vsd_auth: "{{ vsd_auth }}"
         zfb_constants: "{{ zfb_constants }}"
         zfb_proxy_user: "{{ zfb_proxy_user }}"
         zfb_nsg: "{{ zfb_nsg }}"
         zfb_ports: "{{ zfb_ports }}"
         zfb_nsg_infra: "{{ zfb_nsg_infra }}"
-        zfb_vsc_infra: "{{ zfb_vsc_infra }}"
+        zfb_vsc_infra: "{{ zfb_vsc_infra | default({}) }}"
       delegate_to: localhost
 
     - name: Ensure NSGV has the correct configuration
@@ -56,7 +56,8 @@
 
   - name: Configure vCenter path
     set_fact:
-      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}\
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/\
+        {{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/' | urlencode, '') }}{{ vcenter.cluster }}\
         {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference | urlencode, '') }}\
         {{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool | urlencode, '') }}"
 
@@ -149,10 +150,8 @@
         state: present
         cdrom:
           type: "iso"
-          iso_path: "{{ iso_path }}/{{ iso_file }}"
+          iso_path: "[{{ vcenter.datastore }}] {{ iso_path }}/{{ iso_file }}"
       delegate_to: localhost
     when: bootstrap_method == 'zfb_external'
-
-  - debug: var=vm_facts verbosity=1
 
   when: not node_running

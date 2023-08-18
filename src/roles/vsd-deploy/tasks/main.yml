@@ -51,6 +51,10 @@
   import_tasks: set_vsd_creds.yml
   when: not skip_vsd_deploy
 
+- name: Stats only VM
+  set_fact:
+    stats_only_vm: "{{ (groups['stats_only_vsds'] is defined) and (inventory_hostname in groups['stats_only_vsds']) }}"
+
 - block:
 
   - block:
@@ -83,6 +87,7 @@
       when:
         - not nuage_upgrade | default(False)
         - not vsd_standby_cluster | default(False)
+        - not stats_only_vm | default(False)
 
     - name: Set VSD numbering for standby cluster install
       set_fact:
@@ -100,6 +105,7 @@
       when:
         - nuage_upgrade | default(False)
         - not vsd_standby_cluster | default(False)
+        - not stats_only_vm | default(False)
 
     - block:
 
@@ -117,9 +123,10 @@
           vsd_ran_rtt_test: true
 
       when:
-        - inventory_hostname == first_cluster_node_to_install
+        - inventory_hostname == first_cluster_node_to_install | default("")
         - not nuage_upgrade | default(False)
         - vsd_run_cluster_rtt_test | default(False)
+        - not stats_only_vm | default(False)
 
     when: vsd_sa_or_ha is match('ha')
 
@@ -154,6 +161,7 @@
 
 - name: Renew VSD ejabberd license
   import_tasks: renew_ejabberd_license.yml
+  when: not skip_vsd_deploy
 
 - block:
 
@@ -255,11 +263,31 @@
 
     when: vsd_run_disk_performance_test
 
+  - name: Lets run VSD before install hooks
+    include_role:
+      name: hooks
+      tasks_from: main
+    vars:
+      - hooks_file_path: "{{ hook }}"
+      - hook_location:
+        - vsd_before_install
+    loop: "{{ hooks | default([]) }}"
+    loop_control:
+      loop_var: hook
+
   - block:
 
     - name: Install VSD software on standalone node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t s -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
-      when: not deploy_vcin
+      when:
+        - not deploy_vcin
+        - groups['stats_only_vsds'] is not defined
+
+    - name: Install VSD software on standalone node (Can take 20 minutes)
+      command: "/opt/vsd/vsd-install.sh -t t -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
+      when:
+        - not deploy_vcin
+        - stats_only_vm
 
     - name: Install VCIN software on VCIN node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t v -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
@@ -280,7 +308,7 @@
 
       - name: Wait for master VCIN processes to become running
         monit_waitfor_service:
-          name: "{{ vcin_proc_pre['state'].keys() }}"
+          name: "{{ vcin_proc_pre['state'].keys() | list }}"
           timeout_seconds: 1200
           test_interval_seconds: 10
 
@@ -317,9 +345,24 @@
 
   - block:
 
+    - name: Set install for standby if applicable
+      set_fact:
+        install_options: '-t 1'
+      when: vsd_standby_cluster | default(False)
+
+    - name: Set install param for stats only if applicable
+      set_fact:
+        install_options: '-t t'
+      when: stats_only_vm
+
+    - name: Set install param for all others
+      set_fact:
+        install_options: '-t g'
+      when: install_options is not defined
+
     - name: Install VSD software on the first cluster node (Can take 20 minutes)
       command: >-
-        /opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }}
+        /opt/vsd/vsd-install.sh {{ install_options }} -a {{ first_cluster_node_to_install }}
         -b {{ second_cluster_node_to_install }} -c {{ third_cluster_node_to_install }}
         -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}
       when: inventory_hostname == first_cluster_node_to_install
@@ -336,11 +379,24 @@
         -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}
       when: inventory_hostname == third_cluster_node_to_install
 
+    - name: Prevent connections from VSCs, VSGs and WBXs
+      include_role:
+        name: common
+        tasks_from: block-xmpp-connections
+      vars:
+        block_xmpp_connection: true
+      when:
+        - nuage_upgrade | default (False)
+        - not vsd_standby_cluster | default(False)
+        - not stats_only_vm
+
     when: vsd_sa_or_ha is match('ha')
 
   - name: Set XMPP connection to allow both clear and TLS
     command: /opt/vsd/bin/ejmode allow -y
-    when: not deploy_vcin
+    when:
+      - not deploy_vcin
+      - not stats_only_vm
 
   - block:
 
@@ -362,14 +418,20 @@
 
     when: monit_mail_server is defined
 
+  when: not skip_vsd_deploy
   remote_user: "{{ vsd_default_username }}"
 
-- import_tasks: brand_vsd.yml
+- name: Apply VSD branding 
+  include_tasks: brand_vsd.yml
+  loop: "{{ groups['primary_vsds'] }}"
+  loop_control:
+    loop_var: vsd_branding_host
   when:
     - not skip_vsd_deploy
     - branding_zip_file is defined
     - component_type == "vsd"
     - not vsd_standby_cluster | default(False)
+    - not stats_only_vm
 
 - name: Setup health monitoring
   include_role:
@@ -403,22 +465,76 @@
 
   - name: wait for VSD common, core and stats services to become running
     monit_waitfor_service:
-      name: "{{ proc_list['state'].keys() | difference(remove_list) }}"
+      name: "{{ proc_list['state'].keys() | list | difference(remove_list) }}"
       timeout_seconds: 1200
       test_interval_seconds: 30
 
+  - block:
+    - name: Allow XMPP Connections to vsd node after vsd process are stopped
+      include_role:
+        name: common
+        tasks_from: allow-xmpp-connections
+      vars:
+        allow_xmpp_connection: true
+      when:
+        - nuage_upgrade | default (False)
+        - not vsd_standby_cluster | default(False)
+        - inventory_hostname == third_cluster_node_to_install
+    when: vsd_sa_or_ha is match('ha')
   when:
     - component_type == "vsd"
     - (vsd_major_version|int > 5) or
       (vsd_major_version|int == 5 and vsd_minor_version|int >= 3)
+    - not stats_only_vm
   remote_user: "{{ vsd_default_username }}"
 
 - name: Install nginx
+  # noqa 403
   yum:
     name: nginx
-    state: latest       # noqa 403
+    state: latest
   remote_user: "{{ vsd_default_username }}"
   when:
     - vstats is defined
     - not skip_vsd_deploy
-    - target_server_type is match("nuagex")
+  vars:
+    ansible_python_interpreter: /usr/bin/python2
+
+- name: Install statistics for stats-out VSDs (Can take 20 minutes)
+  command: /opt/vsd/install.sh -t t -y
+  remote_user: "{{ vsd_default_username }}"
+  when: statistics_only | default(false)
+
+- block:
+
+  - block:
+
+    - name: Executing VSD inplace upgrade on node 2
+      include_role:
+        name: vsd-upgrade-inplace
+        tasks_from: main.yml
+      when: inventory_hostname == first_cluster_node_to_install
+
+    - name: Executing VSD inplace upgrade on node 3
+      include_role:
+        name: vsd-upgrade-inplace
+        tasks_from: main.yml
+      when: inventory_hostname == second_cluster_node_to_install
+
+    - name: Executing VSD inplace upgrade on node 1
+      include_role:
+        name: vsd-upgrade-inplace
+        tasks_from: main.yml
+      when: inventory_hostname == third_cluster_node_to_install
+
+    when: vsd_sa_or_ha is match('ha')
+
+  - name: Execute VSD inplace upgrade on standalone node
+    include_role:
+      name: vsd-upgrade-inplace
+      tasks_from: main.yml
+    when:
+      - vsd_sa_or_ha is match('sa')
+      - not stats_only_vm | default(False)
+
+  when: (vsd_install_inplace_upgrade | default(False) and not nuage_upgrade | default(False)) or (patch_ejabberd|default(False))

@@ -1,0 +1,28 @@
+
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+  run_once: true
+
+- name: Copy truststore and certificates to stats VSD
+  command:
+    cmd: >-
+      /bin/sshpass -p'{{ vsd_default_password }}'
+      scp -o StrictHostKeyChecking=no truststore.jks {{ stats_vsd }}.jks {{ stats_vsd }}.pem root@{{ stats_vsd }}:/opt/vsd/ejbca/p12/
+    chdir:  /opt/vsd/ejbca/p12/
+  delegate_to: "{{ vsd_hostname_list[0] }}"
+  remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+  changed_when: false
+
+- name: Change ownership of certificates
+  shell: "chown vsd:hadoopusers /opt/vsd/ejbca/p12/{{ stats_vsd }}*" # noqa 305
+  delegate_to: "{{ stats_vsd }}"
+  remote_user: "{{ vsd_default_username }}"
+  changed_when: false

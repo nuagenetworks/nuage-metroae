@@ -284,18 +284,6 @@ class TestCreateZfbProfile(object):
                                             vsd_license_str) is True
 
     @patch(MODULE_PATCH)
-    def test__bad_license(self, module_patch):
-        params = dict(TEST_PARAMS)
-        params["vsd_license_file"] = "invalid_file.bad"
-        mock_module = setup_module(module_patch, params)
-
-        main()
-
-        mock_module.fail_json.assert_called_once()
-        args, kwargs = mock_module.fail_json.call_args_list[0]
-        assert "ERROR: Failure reading file: " in kwargs["msg"]
-
-    @patch(MODULE_PATCH)
     @patch(VSPK_PATCH)
     def test__cannot_connect(self, vspk_patch, module_patch):
         mock_module = setup_module(module_patch)

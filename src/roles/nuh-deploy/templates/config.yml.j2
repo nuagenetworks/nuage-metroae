@@ -1,3 +1,6 @@
+geo:
+  active: true
+  site: a
 network:
     namespaces:
       - name: Internal
@@ -11,6 +14,7 @@ network:
         dns1: ''
         dns2: ''
         dns3: ''
+        domain: {{ dns_domain }}
         gateway: {{ internal_gateway }}
         ipaddr: {{ internal_ip }}
 {% if nuh_sa_or_ha is match('ha') %}
@@ -27,37 +31,67 @@ network:
         vlan: 0
 {% if external_interfaces is defined %}
 {% for interface in external_interfaces %}
-      - dhcp: 'no'
+      - dhcp: false
         dns1: ''
         dns2: ''
         dns3: ''
         namespace: {{ interface.name }}
-        dev: eth2
+{% if nuh_sa_or_ha is match('ha') %}
+        peeripaddr: {{ interface.external_peer_ip }}
+        peerprefix: {{ interface.external_prefix }}
+{% endif %}
+        dev: {{ interface.dev }}
         ipaddr: {{ interface.external_ip }}
         prefix: {{ interface.external_prefix }}
         gateway: {{ interface.external_gateway }}
         vlan: {{ interface.vlan }}
+        dns: current
 {% endfor %}
 {% endif %}
     nuagenetwork: Internal
+    ssh:
+      - Internal
+{% if vrrp is defined and vrrp %}
+vrrp:
+{% for vrrp_item in vrrp %}
+    - router_id: {{ vrrp_item.router_id }}
+      interface: {{ vrrp_item.interface }}
+{% if vrrp_item.vip is defined and vrrp_item.vip %}
+      vip:
+{% for vip_entry in vrrp_item.vip %}
+          - {{ vip_entry }}
+{% endfor %}
+{% endif %}
+      enabled: {{ vrrp_item.enabled | lower }}
+{% endfor %}
+{% else %}
 vrrp: null
+{% endif %}
 proxy:
     - {interface: eth1.0, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
-    - {interface: eth1.0, role: vsdconfig, enabled: false, firewallports: [], settings: {uiport: "", apiport: "", xmppport: "", jmsport: "", geo: false}}
+    - {interface: eth1.0, role: vsdconfig, enabled: {{ vsdconfig_enable }}, firewallports: ['8443', '9443', '5222', '61616'], settings: {uiport: '8443', apiport: '9443', xmppport: '5222', jmsport: '61616', geo: false,  certport: '7443' }}
     - {interface: eth1.0, role: nsgstats, enabled: false, firewallports: [], settings: {cport: "", ccert: ""}}
     - {interface: eth1.0, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
-    - {interface: eth1.0, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
+    - {interface: eth1.0, role: threatprevention, enabled: false, firewallports: [], settings: {sshport: "", syslogport: "", feedserverport: "", restport: "", ccert: ""}}
+    - {interface: eth1.0, role: elasticsearch, enabled: {{ elasticsearch_enable }}, firewallports: ['9200', '6200'], settings: {elasticsearch: '9200', httpsEnabled: yes, httpsPort: '6200', ccert: "proxy", httpEnabled: yes}}
     - {interface: eth1.0, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
     - {interface: eth1.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
 {% if external_interfaces is defined %}
 {% for interface in external_interfaces %}
-    - {interface: eth2.{{ interface.vlan }}, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
-    - {interface: eth2.{{ interface.vlan }}, role: vsdconfig, enabled: false, firewallports: [], settings: {uiport: "", apiport: "", xmppport: "", jmsport: "", geo: false}}
-    - {interface: eth2.{{ interface.vlan }}, role: nsgstats, enabled: false, firewallports: [], settings: {cport: "", ccert: ""}}
-    - {interface: eth2.{{ interface.vlan }}, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
-    - {interface: eth2.{{ interface.vlan }}, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
-    - {interface: eth2.{{ interface.vlan }}, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
-    - {interface: eth2.{{ interface.vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: nsgbootstrap, enabled: true, firewallports: ['11443', '12443'], settings: {cport: '11443', bport: '12443', ccert: "proxy", precert: "proxy", postcert: "proxy" }}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: vsdconfig, enabled: {{ vsdconfig_enable }}, firewallports: ['8443', '9443', "", ""], settings: {uiport: '8443', apiport: '9443', xmppport: "", jmsport: "", geo: false,  certport: '7443' }}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: nsgstats, enabled: true, firewallports: ['39090'], settings: {cport: '39090', ccert: "proxy"}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: threatprevention, enabled: false, firewallports: [], settings: {sshport: "", syslogport: "", feedserverport: "", restport: "", ccert: ""}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: elasticsearch, enabled: {{ elasticsearch_enable }}, firewallports: ['9200', '6200'], settings: {elasticsearch: '9200', httpsEnabled: yes, httpsPort: '6200', ccert: "proxy", httpEnabled: yes}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
+{% endfor %}
+{% endif %}
+{% if groups['portals'] | default([]) %}
+sdwanportal:
+{% for portal in groups['portals'] %}
+    - {{ hostvars[portal]['mgmt_ip'] }}
 {% endfor %}
 {% endif %}
 servers:
@@ -69,6 +103,67 @@ servers:
 {% if vsd_sa_or_ha is match('sa') %}
     vsd1: {{ hostvars[groups['vsd_sa_node'][0]]['mgmt_ip'] }}
 {% endif %}
+{% if stats_out %}
+{% if groups['data_vstats'] is defined %}
+    es1: {{ hostvars[groups['data_vstats'][0]]['mgmt_ip'] }}
+    es2: {{ hostvars[groups['data_vstats'][1]]['mgmt_ip'] }}
+    es3: {{ hostvars[groups['data_vstats'][2]]['mgmt_ip'] }}
+{% if groups['add_data_vstats'] is defined %}
+    es4: {{ hostvars[groups['add_data_vstats'][0]]['mgmt_ip'] }}
+    es5: {{ hostvars[groups['add_data_vstats'][1]]['mgmt_ip'] }}
+    es6: {{ hostvars[groups['add_data_vstats'][2]]['mgmt_ip'] }}
+{% endif %}
+{% endif %}
+{% else %}
+{% if groups['vstats'] is defined and groups['vstats'] | length >= 1 %}
+    es1: {{ hostvars[groups['vstats'][0]]['mgmt_ip'] }}
+{% if groups['vstats'] is defined and groups['vstats'] | length >= 2 %}
+    es2: {{ hostvars[groups['vstats'][1]]['mgmt_ip'] }}
+{% if groups['vstats'] is defined and groups['vstats'] | length >= 3 %}
+    es3: {{ hostvars[groups['vstats'][2]]['mgmt_ip'] }}
+{% endif %}
+{% endif %}
+{% endif %}
+{% endif %}
 na:
-    vsd: {sleepTimer: 2000, socketTimeout: 60000}
+{% if vsd_auth is defined %}
+    vsd: 
+      sleepTimer: 2000
+      socketTimeout: 60000
+      password: {{ vsd_auth.password }}
+      useJmsForEvents: false
+{% if notification_app1 is defined %}
+      useXmppForEvents: true
+{% else %}
+      useXmppForEvents: false
+{% endif %}
+      username: {{ vsd_auth.username }}
+      enterprise: {{ vsd_auth.enterprise }}
+{% endif %}
     notificationHandlers: []
+{% if notification_app1 is defined %}
+    xmpp:
+      user:
+        primary: {{ notification_app1.username }}
+{% if notification_app2 is defined %}
+        secondary: {{ notification_app2.username }}
+{% endif %}
+      password:
+        primary: {{ notification_app1.password }}
+{% if notification_app2 is defined %}
+        secondary: {{ notification_app2.password }}
+{% endif %}
+      service: {{ vsd_fqdn }}
+{% endif %}
+{% if groups['webfilters'] | default([]) %}
+webfiltervms:
+{% for webfilter in groups['webfilters'] %}
+    - {{ hostvars[webfilter]['mgmt_ip'] }}
+{% endfor %}
+{% endif %}
+{% if groups['tpms'] | default([]) %}
+tpms:
+{% for tpm in groups['tpms'] %}
+    - {{ hostvars[tpm]['mgmt_ip'] }}
+{% endfor %}
+{% endif %}

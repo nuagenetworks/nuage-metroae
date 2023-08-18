@@ -1,9 +1,4 @@
 ---
-- include_role:
-    name: skip-actions
-  vars:
-    - action: vrs_predeploy
-
 - block:
 
   - name: Pull facts on VRS target {{ inventory_hostname }}
@@ -55,7 +50,7 @@
       - "{{ standby_controller_addr }}"
     register: command_result
     ignore_errors: yes
-    changed_when: false
+    changed_when: False
 
   - name: Set if skipping VRS deploy
     set_fact: skip_vrs_deploy="{{ command_result is defined and command_result.results[0].rc == 0 and
@@ -77,7 +72,7 @@
 
 - block:
   - name: Copy External PKI Certificates
-    shell: 'sshpass -p{{ compute_password | default(target_server_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ item }} {{ compute_username | default(target_server_username) }}@{{ inventory_hostname }}:/etc/default/bootstrap/keys/'
+    shell: "sshpass -p'{{ compute_password | default(target_server_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ item }} {{ compute_username | default(target_server_username) }}@{{ inventory_hostname }}:/etc/default/bootstrap/keys/"
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     with_items:
       - "{{ private_key_path }}"
@@ -143,12 +138,16 @@
 
   - name: Install Nuage OpenVSwitch packages on RedHat OS family distros
     yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+    vars:
+      ansible_python_interpreter: /usr/bin/python2
     with_items:
      - "{{ vrs_package_file_name_list }}"
     when: ansible_os_family == "RedHat"
 
   - name: Install Selinux package for RHEL7 and Centos7
     yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+    vars:
+      ansible_python_interpreter: /usr/bin/python2
     with_items:
      - "{{ selinux_package_file_name_list }}"
     when:
@@ -164,6 +163,8 @@
 
     - name: Install Nuage DKMS packages on RedHat OS family distros
       yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+      vars:
+        ansible_python_interpreter: /usr/bin/python2
       with_items:
        - "{{ dkms_package_file_name_list }}"
       when: ansible_os_family == "RedHat"

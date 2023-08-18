@@ -1,0 +1,38 @@
+- block:
+
+  - name: Get database container ID
+    shell: docker ps -a | grep 'vnsportal_db' | awk '{print $1}'
+    register: db_container_id
+
+  - name: Copy backup directory to portal
+    copy:
+      src: "{{ metro_backup_root }}/backup-latest-portal/portal-{{ inventory_hostname }}/{{ inventory_hostname }}/opt/vnsportal/db-backups/"
+      dest: /opt/vnsportal/db-backups
+
+  - block:
+
+    - name: Get backup directory
+      find:
+        paths: /opt/vnsportal/db-backups/
+        file_type: directory
+        recurse: no
+        excludes: 'installer'
+      register: db_backups
+
+    - name: Get latest backup directory
+      set_fact:
+        backup_dir: "{{ db_backups.files | sort(attribute='mtime', reverse=true) | first }}"
+
+    - name: Get latest backup directory name
+      set_fact:
+        backup_dir_name: "{{ backup_dir.path | basename }}"
+
+    - name: Restore VNS database schema from backup
+      shell: "docker exec -i {{ db_container_id.stdout }} mysql --user={{ portal_database_default_username }} --password={{ portal_database_default_password }} --one-database vns < /opt/vnsportal/db-backups/{{ backup_dir_name }}/vnsportal_db-db1_1/backup.sql"
+
+    - name: Restore Audit database schema from backup
+      shell: "docker exec -i {{ db_container_id.stdout }} mysql --user={{ portal_database_default_username }} --password={{ portal_database_default_password }} --one-database audit < /opt/vnsportal/db-backups/{{ backup_dir_name }}/vnsportal_db-db1_1/backup.sql"
+
+    when: inventory_hostname == portal1.hostname
+
+  remote_user: "{{ portal_default_username }}"

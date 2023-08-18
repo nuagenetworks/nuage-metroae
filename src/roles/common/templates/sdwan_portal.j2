@@ -27,12 +27,10 @@ portal_sa_or_ha: ha
 {% endif %}
 
 mgmt_ip: {{ item.mgmt_ip }}
-mgmt_prefix: {{ item.mgmt_ip_prefix }}
+mgmt_prefix: {{ item.mgmt_ip_prefix | default(24) }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 
 vsd_fqdn: {{ common.vsd_fqdn_global }}
-
-vstat_fqdn: {{ common.vstat_fqdn_global }}
 
 {% if item.cpuset is defined %}
 cpuset:
@@ -44,11 +42,15 @@ cpuset:
 password_reset_email: {{ item.password_reset_email }}
 new_account_email: {{ item.new_account_email }}
 forgot_password_email: {{ item.forgot_password_email }}
-smtp_fqdn: {{ item.smtp_fqdn }}
-smtp_port: {{ item.smtp_port }}
+smtp_fqdn: {{ item.smtp_fqdn | default("") }}
+smtp_port: {{ item.smtp_port | default("") }}
 smtp_secure: {{ item.smtp_secure | default("") }}
-smtp_user: {{ encrypted.smtp_auth_username | default("") }}
-smtp_password: {{ encrypted.smtp_auth_password | default("") }}
+{% if encrypted.smtp_auth_username is defined %}
+smtp_user: {{ encrypted.smtp_auth_username }}
+{% endif %}
+{% if encrypted.smtp_auth_password is defined %}
+smtp_password: {{ encrypted.smtp_auth_password }}
+{% endif %}
 sdwan_portal_secure: {{ item.sdwan_portal_secure | default("false") }}
 
 {% if portal_path is defined %}
@@ -60,3 +62,7 @@ portal_file_name: {{ portal_file_name }}
 {% if item.portal_version is defined %}
 portal_version: {{ item.portal_version }}
 {% endif %}
+
+{%- if item.preserve_vm is defined %}
+preserve_vm: {{ item.preserve_vm }}
+{%- endif %}

@@ -1,6 +1,6 @@
 
 - name: Finding VM folder (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_find:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -16,23 +16,21 @@
     fail_msg: "Unexpected error from vmware guest find:\n{{ vm_folder.msg | default('') }}"
 
 - name: Gathering info on VM
-  connection: local
+  delegate_to: localhost
   vmware_guest_info:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
     datacenter: "{{ vcenter.datacenter }}"
-    folder: "/{{ vcenter.datacenter }}{{ vm_folder['folders'][0] }}"
+    folder: "{{ vm_folder['folders'][0] }}"
     name: "{{ vm_name }}"
     validate_certs: no
   register: vm_facts
   when: vm_folder is succeeded
 
-- debug: var=vm_facts verbosity=1
-
 - block:
   - name: Get VSD directory if present (ignoring errors)
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"

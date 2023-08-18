@@ -12,28 +12,57 @@
       to_minor_version: "{{ upgrade_to_version.split('.')[1] }}"
       to_patch_version: "{{ (upgrade_to_version|upper).split('.')[2].split('U')[0] }}"
 
-  - name: Set from and to API versions
-    set_fact:
-      from_api_version: "{{ (from_major_version|int) if (from_major_version|int < 20) else (from_major_version|int - 14) }}"
-      to_api_version: "{{ (to_major_version|int) if (to_major_version|int < 20) else (to_major_version|int - 14) }}"
+  - block:
 
-  - name: Set minor upgrade path
-    set_fact:
-      upgrade_major_or_minor: "minor"
-    when: from_api_version == to_api_version
+    - name: Set minor upgrade path
+      set_fact:
+        upgrade_major_or_minor: "minor"
+      when: from_major_version|int == to_major_version|int
 
-  - name: Set major upgrade path
-    set_fact:
-      upgrade_major_or_minor: "major"
-    when: from_api_version < to_api_version
+    - name: Set major upgrade path
+      set_fact:
+        upgrade_major_or_minor: "major"
+      when: from_major_version|int < to_major_version|int
+
+    when: to_major_version|int < 20
+
+  - block:
+
+    - name: Set major upgrade path
+      set_fact:
+        upgrade_major_or_minor: "major"
+
+    - name: Set minor upgrade path
+      set_fact:
+        upgrade_major_or_minor: "minor"
+      when:
+        - from_major_version|int == to_major_version|int
+        - from_minor_version|int == to_minor_version|int
+
+    - name: Set minor upgrade path exception 6.0 to 20.5
+      set_fact:
+        upgrade_major_or_minor: "minor"
+      when:
+        - from_major_version|int == 6
+        - to_major_version|int == 20
+        - to_minor_version|int == 5
+
+    when: to_major_version|int >= 20
 
   - name: Set inplace upgrade
     set_fact:
       inplace_upgrade: true
     when:
-      - from_api_version == to_api_version
+      - from_major_version == to_major_version
       - from_minor_version == to_minor_version
       - (from_patch_version == to_patch_version) or (from_major_version|int >= 6)
-      - (upgrade_from_version|upper).split('U')[0] is version_compare('5.4.1', operator='ge', strict=True)
+      - (upgrade_from_version|upper|replace('R', '')).split('U')[0] is version('5.4.1', '>=')
+
+  - name: Set upgrade to 20.10.R4
+    set_fact:
+      block_and_allow_xmpp_connection: true
+    when:
+      - upgrade_from_version|upper|replace('R','') is version('20.10.4', '<')
+      - upgrade_to_version|upper|replace('R','') is version('20.10.4', '>=')
 
   when: upgrade_from_version is defined and upgrade_to_version is defined

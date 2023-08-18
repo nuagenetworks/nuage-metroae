@@ -1,9 +1,4 @@
 ---
-- hosts: primary_vsds
-  gather_facts: no
-  roles:
-    - vstat-vsd-health
-
 - hosts: vscs
   gather_facts: no
   roles:
@@ -17,4 +12,15 @@
   gather_facts: no
   roles:
     - vstat-vrs-health
+
+- hosts: vstats,data_vstats,primary_vstats,add_data_vstats
+  gather_facts: no
+  serial: 1
+  vars:
+    report_filename: vstat_health_report
+    vstat_username: "{{ vstat_custom_username | default(vstat_default_username) }}"
+    vstat_password: "{{ vstat_custom_password | default(vstat_default_password) }}"
+  roles:
+    - vstat-health
+  remote_user: "{{ vstat_default_username }}"
 

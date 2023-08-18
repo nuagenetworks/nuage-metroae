@@ -63,9 +63,17 @@
     pause:
       seconds: 10
 
-  - name: Execute list_p1db command on node3
+  - name: Wait until VSD is decoupled
     shell: "{{ p1db_cmd }}"  # noqa 305
     register: list_p1db_output
+    retries: 6
+    delay: 10
+    until: list_p1db_output.stdout == ""
+
+  - name: Delete the VSD migration script ISO from VSD's temp directory
+    file:
+      path: /tmp/{{ vsd_migration_iso_file_name }}
+      state: absent
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
@@ -122,7 +130,7 @@
     client_list.stdout.find('keyserver@' + vsd_fqdn) != -1 and
     client_list.stdout.find('push@' + vsd_fqdn) != -1 and
     client_list.stdout_lines|length == 3
-  retries: 10
+  retries: 20
   delay: 20
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"

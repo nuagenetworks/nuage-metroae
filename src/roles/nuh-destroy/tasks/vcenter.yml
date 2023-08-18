@@ -1,0 +1,93 @@
+- name: Finding VM folder
+  delegate_to: localhost
+  vmware_guest_find:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    name: "{{ vmname }}"
+    validate_certs: no
+  register: nuh_vm_folder
+
+- name: Check output message for unexpected errors
+  assert:
+    that: nuh_vm_folder.msg is search('Unable to find folders for virtual machine')
+    fail_msg: "{{ nuh_vm_folder.msg }}"
+  when: nuh_vm_folder.msg is defined
+
+- name: Check for exception in NUH VM Folder
+  fail: msg="Exception found {{ nuh_vm_folder.exception }}"
+  when: nuh_vm_folder.exception is defined
+
+- name: Gathering info on VM
+  delegate_to: localhost
+  vmware_guest_info:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    folder: "{{ nuh_vm_folder['folders'][0] }}"
+    name: "{{ vmname }}"
+    validate_certs: no
+  register: nuh_vm_facts
+  when: nuh_vm_folder is succeeded
+
+- block:
+
+  - block:
+
+    - name: Get Facts of VM
+      vmware_vm_info:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        validate_certs: no
+      delegate_to: localhost
+      register: vm_info
+
+    - name: Set uuid fact
+      set_fact:
+        uuid: "{{ item.uuid }}"
+      when: item.guest_name == vm_name
+      with_items: "{{ vm_info.virtual_machines }}"
+
+    - debug: var=uuid
+
+    - name: Turn off autostart
+      delegate_to: localhost
+      vmware_autostart:
+        name: "{{ vm_name }}"
+        uuid: "{{ uuid }}"
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        state: disable
+        validate_certs: no
+
+    - name: Power off the NUH VM
+      delegate_to: localhost
+      vmware_guest:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        validate_certs: no
+        datacenter: "{{ vcenter.datacenter }}"
+        folder: "{{ nuh_vm_folder['folders'][0] }}"
+        name: "{{ vm_name }}"
+        state: "poweredoff"
+
+    when: nuh_vm_facts['instance']['hw_power_status'] == 'poweredOn'
+
+  - name: Removing the NUH VM
+    delegate_to: localhost
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      validate_certs: no
+      datacenter: "{{ vcenter.datacenter }}"
+      folder: "{{ nuh_vm_folder['folders'][0] }}"
+      name: "{{ vm_name }}"
+      state: "absent"
+    when: (not preserve_vm | default( False ))
+
+  when: nuh_vm_folder is succeeded and nuh_vm_facts is succeeded

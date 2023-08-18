@@ -7,6 +7,9 @@
     ssh_host: "{{ mgmt_ip }}"
     host_username: "{{ portal_default_username }}"
 
+- import_tasks: openstack.yml
+  when: target_server_type is match("openstack")
+
 - block:
   - name: Check if Docker is installed
     command:
@@ -27,6 +30,12 @@
         - "*************************************************"
     when: docker_installed.rc == 0
   remote_user: "{{ portal_default_username }}"
+
+- name: Add ip forwarding on SDWAN portal
+  shell: echo "net.ipv4.ip_forward = 1" > /etc/sysctl.conf
+
+- name: Enable Ip forwarding
+  shell: sysctl -p /etc/sysctl.conf
 
 - name: Save the Portal version
   set_fact:
@@ -76,6 +85,7 @@
   remote_user: "{{ portal_default_username }}"
 
 - block:
+
   - name: Display if installing from a tarball
     debug:
       msg:
@@ -102,5 +112,3 @@
 
   when: portal_file_name is defined
   remote_user: "{{ portal_default_username }}"
-
-

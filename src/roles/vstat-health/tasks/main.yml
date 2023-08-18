@@ -15,6 +15,9 @@
       mac_addr: False
     register: net_conf
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
   - name: Print network config when verbosity >= 1
     debug: var=net_conf.info verbosity=1
@@ -30,6 +33,10 @@
   - name: Stat the pid file for elasticsearch process
     stat: path=/var/run/elasticsearch/elasticsearch.pid
     register: pid
+    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
   - name: Verify that the elasticsearch pid file exists
     assert:
@@ -40,6 +47,10 @@
     command: systemctl is-active elasticsearch    # noqa 303
     register: es_process_status
     changed_when: True
+    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
   - name: Verify that elasticsearch status is active
     assert:
@@ -63,6 +74,10 @@
       status_code: 200
       validate_certs: False
     register: webresult
+    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
   - name: Write web interface result separator to report file
     nuage_append: filename="{{ report_path }}" text="-----VSTAT Web Interface Check-----\n"
@@ -80,6 +95,10 @@
     until: es_health.json.unassigned_shards == 0
     retries: 60
     delay: 10
+    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
   - name: Write shard status result separator to report file
     nuage_append: filename="{{ report_path }}" text="-----Shard Status Results-----\n"
@@ -96,16 +115,35 @@
     vars:
       vsd_hostname: "{{ vsd_fqdn }}"
 
-  - name: Check the ES status color
+  - name: Set fact for expected number of ES nodes
+    set_fact:
+      expected_es_node_count: "{{ groups['vstats'] | default([]) | length + groups['data_vstats'] | default([]) | length + groups['primary_vstats'] | default([]) | length + groups['add_data_vstats'] | default([]) | length }}"
+
+  - name: Check the ES status color and node count
     uri:
       url: "http://{{ inventory_hostname }}:9200/_cluster/health?pretty"
       method: GET
     register: es_status
-    until: es_status.json.status == 'green'
+    until: es_status.json.status == 'green' and es_status.json.number_of_nodes == expected_es_node_count|int
     retries: 60
     delay: 10
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    delegate_to: "{{ hostvars[inventory_hostname].vsd_hostname_list[0] }}"
+    remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    become: "{{ 'no' if hostvars[inventory_hostname].vsd_hostname_list[0].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ hostvars[inventory_hostname].vsd_hostname_list[0].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+
+  - name: Check the ES data node count when active/standby
+    uri:
+      url: "http://{{ inventory_hostname }}:9200/_cluster/health?pretty"
+      method: GET
+    register: es_status_active_standby
+    until: es_status_active_standby.json.number_of_data_nodes == groups['backup_vstats']|length|int
+    retries: 60
+    delay: 10
+    delegate_to: "{{ hostvars[inventory_hostname].vsd_hostname_list[0] }}"
+    remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    when: groups['backup_vstats'] is defined and groups['backup_vstats']|length > 0
     become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
     vars:
       ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
@@ -132,11 +170,6 @@
     - name: Write cluster_name result to report file
       nuage_append: filename="{{ report_path }}" text="{{ es_status.json.cluster_name }}\n"
       delegate_to: localhost
-
-    - name: Check number_of_nodes
-      assert:
-        that: "es_status.json.number_of_nodes == 3"
-        msg: "Incorrect number_of_nodes {{ es_status.json.number_of_nodes }}. Quitting."
 
     - name: Write number_of_nodes result separator to report file
       nuage_append: filename="{{ report_path }}" text="-----Elasticsearch Number of Nodes-----\n"

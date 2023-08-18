@@ -16,8 +16,11 @@
   vars:
     item: "{{ component }}"
 
-- name: Concat credentials with the component host vars
-  shell: cat {{ inventory_dir }}/host_vars/component_credentials >> {{ inventory_dir }}/host_vars/{{ component_hostname }}
+- name: Append credentials to the component host vars
+  blockinfile:
+    path: "{{ inventory_dir }}/host_vars/{{ component_hostname }}"
+    block: "{{ lookup('file', '{{ inventory_dir }}/host_vars/component_credentials') }}"
+    insertafter: EOF
 
 - name: Cleanup the temp credentials file
   file:

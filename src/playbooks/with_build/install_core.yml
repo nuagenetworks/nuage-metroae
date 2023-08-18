@@ -1,0 +1,57 @@
+- hosts: vscs
+  gather_facts: no
+  pre_tasks:
+    - name: Check if VSCs prereq satisfied for install
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
+      vars:
+        required_available_disk_space: "{{ vsc_fallocate_size_gb }}"
+        disk_space_path: "{{ images_path }}"
+
+- hosts: vstats
+  gather_facts: no
+  pre_tasks:
+    - name: Check if VSTATs prereq satisfied for install
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
+      vars:
+        required_available_disk_space: "{{ vstat_allocate_size_gb }}"
+        disk_space_path: "{{ images_path }}"
+
+- hosts: vcins
+  gather_facts: no
+  pre_tasks:
+    - name: Check if VCINs prereq satisfied for install
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
+      vars:
+        required_available_space: "{{ vcin_allocate_size_gb }}"
+
+- hosts: nuhs
+  gather_facts: no
+  pre_tasks:
+    - name: Check if NUH prereq satisfied for install
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
+
+- name: Run Install VSDs
+  import_playbook: "install_vsds.yml"
+
+- name: Run Install NUHs
+  import_playbook: "install_nuhs.yml"
+
+- name: Run Install VSCs
+  import_playbook: "install_vscs.yml"
+
+- name: Run Install VSTATs
+  import_playbook: "install_vstats.yml"
+
+- name: Run Install VSTATs
+  import_playbook: "install_vsd_stats.yml"
+
+- name: Run Install VCINs
+  import_playbook: "install_vcins.yml"

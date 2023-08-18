@@ -13,11 +13,11 @@ Ensure that all components you wish to have backed up are specified under your d
 
 To perform a backup of all supported components issue:
 
-    metroae backup
+    metroae-container backup
 
 To perform a backup of a specific component issue:
 
-    metroae backup vsds
+    metroae-container backup vsds
 
 Substitute the component name to be backed up if different than `vsds`.
 
@@ -31,19 +31,19 @@ Ensure that all components you wish to have restored are specified under your de
 
 To restore all supported components issue:
 
-    metroae restore
+    metroae-container restore
 
 To restore a specific component issue:
 
-    metroae restore vsds
+    metroae-container restore vsds
 
 Substitute the component name to be backed up if different than `vsds`.
 
 Restore can alternatively be performed with each step separately using:
 
-    metroae restore vsds predeploy
-    metroae restore vsds deploy
-    metroae restore vsds postdeploy
+    metroae-container restore vsds predeploy
+    metroae-container restore vsds deploy
+    metroae-container restore vsds postdeploy
 
 ## TLS Configuration on VSC During Restore
 

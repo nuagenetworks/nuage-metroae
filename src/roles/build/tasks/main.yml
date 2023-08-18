@@ -9,14 +9,10 @@
   tags:
     - always
 
-- name: Get unzipped files dir
-  set_fact:
-    nuage_unzipped_files_dir: "{{ common.nuage_unzipped_files_dir }}"
-
-- name: Set nuage unzipped directory to start with images if not absolute path
-  set_fact:
-    nuage_unzipped_files_dir: /metroae_data/{{ nuage_unzipped_files_dir }}
-  when: common.nuage_unzipped_files_dir is not match('^/')
+- name: Fix image paths for unzipped images if necessary
+  import_role: 
+    name: common
+    tasks_from: fix-image-paths
 
 - name: Clear plugin group_vars content
   set_fact:
@@ -34,18 +30,6 @@
   set_fact:
     build_hooks: "{{ build_hooks + item.hooks }}"
   loop: "{{ plugin_configs }}"
-
-- name: Lets run build hooks
-  include_role:
-    name: hooks
-    tasks_from: main
-  vars:
-    - hooks_file_path: "{{ hook }}"
-    - hook_location:
-      - build
-  loop: "{{ build_hooks }}"
-  loop_control:
-    loop_var: hook
 
 - name: Update VSD variables
   include_role:
@@ -89,6 +73,12 @@
   when: nuhs is defined and nuhs|length > 0
   tags: vns
 
+- name: Update NFS variables
+  include_role:
+    name: common
+    tasks_from: nfs-process-vars
+  when: nfss is defined and nfss|length > 0
+
 - name: Update Netconf variables
   include_role:
     name: common
@@ -129,18 +119,6 @@
     tasks_from: dns-process-vars
   tags: dns
 
-- name: Update hosts variables
-  include_role:
-    name: common
-    tasks_from: hosts-process-vars
-  tags: always
-
-- name: Update groups variables
-  include_role:
-    name: common
-    tasks_from: groups-process-vars
-  tags: always
-
 - name: Update STCvs variables
   include_role:
     name: common
@@ -157,3 +135,32 @@
   include_role:
     name: common
     tasks_from: webfilter-process-vars
+
+- name: Update TPM variables
+  include_role:
+    name: common
+    tasks_from: tpm-process-vars
+
+- name: Lets run build hooks
+  include_role:
+    name: hooks
+    tasks_from: main
+  vars:
+    - hooks_file_path: "{{ hook }}"
+    - hook_location:
+      - build
+  loop: "{{ build_hooks }}"
+  loop_control:
+    loop_var: hook
+
+- name: Update hosts variables
+  include_role:
+    name: common
+    tasks_from: hosts-process-vars
+  tags: always
+
+- name: Update groups variables
+  include_role:
+    name: common
+    tasks_from: groups-process-vars
+  tags: always

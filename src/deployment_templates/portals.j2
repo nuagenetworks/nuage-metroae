@@ -22,11 +22,7 @@
     # < Management IP Address >
     # Management IP of SD-WAN Portal
     #
-    {%- if item.mgmt_ip is defined %}
     mgmt_ip: "{{ item.mgmt_ip }}"
-    {%- else %}
-    # mgmt_ip: ""
-    {%- endif %}
 
     # < Management Network Prefix Length >
     # Management network prefix length for SD-WAN Portal
@@ -34,17 +30,13 @@
     {%- if item.mgmt_ip_prefix is defined %}
     mgmt_ip_prefix: {{ item.mgmt_ip_prefix }}
     {%- else %}
-    # mgmt_ip_prefix: 0
+    # mgmt_ip_prefix: 24
     {%- endif %}
 
     # < Management Network Gateway >
     # Management network gateway for SD-WAN Portal
     #
-    {%- if item.mgmt_gateway is defined %}
     mgmt_gateway: "{{ item.mgmt_gateway }}"
-    {%- else %}
-    # mgmt_gateway: ""
-    {%- endif %}
 
     # < Management Network Bridge >
     # Network Bridge used for the management interface of Portal. It is a Linux network bridge. This field can be overridden by defining the management network bridge separately in the component configuration. Defaults to the global setting
@@ -70,22 +62,14 @@
 
     # < Target Server Type >
     # Type of hypervisor environment into which the instance will be created
-    # (kvm) 
+    # (kvm, openstack) 
     #
-    {%- if item.target_server_type is defined %}
     target_server_type: "{{ item.target_server_type }}"
-    {%- else %}
-    # target_server_type: ""
-    {%- endif %}
 
     # < Target Server IP or FQDN >
     # Hostname or IP address of the hypervisor where VM  will be instantiated
     #
-    {%- if item.target_server is defined %}
     target_server: "{{ item.target_server }}"
-    {%- else %}
-    # target_server: ""
-    {%- endif %}
 
     # < KVM cpuset information >
     # Cpuset information for cpu pinning on KVM. For example, Portal requires 6 cores and sample values will be of the form [ 0, 1, 2, 3, 4, 5 ]
@@ -97,6 +81,15 @@
     {%- endif %}
 
     ##########################
+
+    # < Preserve Portal VM >
+    # Shuts down the vm during destroy process, instead of actually deleting them.
+    #
+    {%- if item.preserve_vm is defined %}
+    preserve_vm: {{ item.preserve_vm | lower }}
+    {%- else %}
+    # preserve_vm: true/false
+    {%- endif %}
 
     ##### Email
 
@@ -181,6 +174,94 @@
     {%- endif %}
 
     ############
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    ##### OpenStack Parameters
+
+    # < OpenStack Image >
+    # Name of image installed on OpenStack for VSTAT
+    #
+    {%- if item.openstack_image is defined %}
+    openstack_image: "{{ item.openstack_image }}"
+    {%- else %}
+    # openstack_image: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Flavor >
+    # Name of instance flavor installed on OpenStack for VSTAT
+    #
+    {%- if item.openstack_flavor is defined %}
+    openstack_flavor: "{{ item.openstack_flavor }}"
+    {%- else %}
+    # openstack_flavor: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Availability Zone >
+    # Name of availability zone on OpenStack for VSTAT
+    #
+    {%- if item.openstack_availability_zone is defined %}
+    openstack_availability_zone: "{{ item.openstack_availability_zone }}"
+    {%- else %}
+    # openstack_availability_zone: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Network >
+    # Name of network on OpenStack for VSTAT
+    #
+    {%- if item.openstack_network is defined %}
+    openstack_network: "{{ item.openstack_network }}"
+    {%- else %}
+    # openstack_network: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Subnet >
+    # Name of subnet on OpenStack for VSTAT
+    #
+    {%- if item.openstack_subnet is defined %}
+    openstack_subnet: "{{ item.openstack_subnet }}"
+    {%- else %}
+    # openstack_subnet: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Port Name >
+    # Name for Mgmt interface
+    #
+    {%- if item.openstack_port_name is defined %}
+    openstack_port_name: "{{ item.openstack_port_name }}"
+    {%- else %}
+    # openstack_port_name: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Port Security Groups >
+    # Set of security groups to associate with Mgmt interface
+    #
+    {%- if item.openstack_port_security_groups is defined %}
+    openstack_port_security_groups: [ {% for i in item.openstack_port_security_groups | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # openstack_port_security_groups: []
+    {%- endif %}
+
+    ##########################
+    {%- endif %}
 
 {% endfor %}
 {% else %}

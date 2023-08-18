@@ -1,9 +1,9 @@
 forgot.password.sender.address: {{ forgot_password_email }}
-gr.dc: '1'
-gr.dc1.address: 0.0.0.0
-gr.dc2.address: 0.0.0.0
-gr.enabled: false
+advanced.client.timeout: '180'
+advanced.es.timeout: '60000'
+vnsportal.default.ui: 1
 {% if portal_sa_or_ha == 'sa' %}
+gr.enabled: false
 ha.enabled: false
 ha.node1.address: {{ portal1.mgmt_ip }}
 ha.node2.address: ''
@@ -13,6 +13,20 @@ ha.enabled: true
 ha.node1.address: {{ portal1.mgmt_ip }}
 ha.node2.address: {{ portal2.mgmt_ip }}
 ha.node3.address: {{ portal3.mgmt_ip }}
+{% if grcn1.current_dc is defined %}
+{% if grcn1.current_dc == 'dc1' %}
+gr.dc: '1'
+gr.dc1.address: {{ grcn1.mgmt_ip }}
+gr.dc2.address: {{ grcn1.other_dc_grcn_ip }}
+{% else %}
+gr.dc: '2'
+gr.dc1.address: {{ grcn1.other_dc_grcn_ip }}
+gr.dc2.address: {{ grcn1.mgmt_ip }}
+{% endif %}
+gr.enabled: true
+{% else %}
+gr.enabled: false
+{% endif %}
 {% endif %}
 jms.password: csproot
 jms.username: csproot@csp
@@ -22,11 +36,15 @@ proxy.enabled: false
 proxy.port: ''
 proxy.url: 0.0.0.0
 smtp.host: {{ smtp_fqdn | default('None') }}
-smtp.password: {{ smtp_password }}
-smtp.port: {{ smtp_port | default('None')  }}
-smtp.secureConnection: {{ smtp_secure | default('false') }}
-smtp.user: {{ smtp_port | default('25')  }}
+smtp.password: '{{ smtp_password | default('None') }}'
+smtp.port: '{{ smtp_port | default('25') }}'
+smtp.secureConnection: {{ '1' if smtp_secure is defined and smtp_secure else '0' }}
+smtp.user: '{{ smtp_user | default('None') }}'
+{% if vstat_fqdn_global is defined %}
 spring.data.jest.uri: http://{{ vstat_fqdn_global }}
+{% else %}
+spring.data.jest.uri: ''
+{% endif %}
 sso.custom.entityId: com:nokia:vnsportal:sp
 sso.custom.idp.metadata: idp.metadata.xml
 sso.custom.imagename: nuage/vnsportal-eauth-saml-XYZ
@@ -43,7 +61,10 @@ sso.keystore.key.password: changeit
 sso.keystore.password: changeit
 sso.profile: 0
 vnsportal.csp.fqdn: {{ portal_fqdn_global }}
+vnsportal.default.ui: 1
 vsd.host: {{ vsd_fqdn }}:{{ vsd_port }}
 vsd.root.org: csp
 vsd.root.password: vnsportal
 vsd.root.username: vnsportal
+vsd.validatecertificate: false
+vsd.vspca: {{ vsd_vspca }}

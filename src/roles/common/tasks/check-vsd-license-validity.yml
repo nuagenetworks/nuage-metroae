@@ -1,12 +1,24 @@
 ---
+- name: Get current VSD API version
+  include_role:
+    name: common
+    tasks_from: get-current-vsd-api-version
+
+- name: Format VSPK auth for VSPK module
+  set_fact:
+    license_check_auth:
+      username: "{{ vsd_auth.username }}"
+      password: "{{ vsd_auth.password }}"
+      enterprise: "{{ vsd_auth.enterprise }}"
+      api_url: "{{ vsd_auth.api_url }}"
+      api_version: "{{ current_api_version }}"
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
 - name: Check VSD License
   check_vsd_license_validity:
-    vsd_auth:
-      "{{ vsd_auth }}"
+    vsd_auth: "{{ license_check_auth }}"
     required_days_left: "{{ vsd_license_required_days_left | default(-1) }}"
-    vsd_version: "{{ vsd_version.stdout }}"
   register: license_valid
   delegate_to: localhost
-  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
 - debug: var=license_valid verbosity=1

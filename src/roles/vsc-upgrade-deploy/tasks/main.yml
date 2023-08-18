@@ -6,6 +6,8 @@
   no_log: True
   ignore_errors: True
 
+- meta: reset_connection
+
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
@@ -15,6 +17,8 @@
     ssh_password: "{{ vsc_creds.password }}"
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
+
+- meta: reset_connection
 
 - name: Get output of 'show bof'
   sros_command:
@@ -34,6 +38,8 @@
 - name: Print bof config in json  when verbosity >= 1
   debug: var=bof_json verbosity=1
 
+- meta: reset_connection
+
 - name: Get current file version of image on VSC
   sros_command:
     commands:
@@ -52,6 +58,8 @@
 - name: Print image version in json  when verbosity >= 1
   debug: var=version_json verbosity=1
 
+- meta: reset_connection
+
 - name: Register uptime before reboot
   sros_command:
     commands:
@@ -67,6 +75,8 @@
 
 - block:
 
+  - meta: reset_connection
+
   - name: Reboot VSC VM (ignoring errors)
     sros_command:
       commands:
@@ -74,6 +84,8 @@
       provider: "{{ vsc_creds }}"
     delegate_to: localhost
     ignore_errors: true
+
+  - meta: reset_connection
 
   - name: Wait for VSC ssh to be ready
     include_role:
@@ -86,6 +98,8 @@
       ssh_user: "{{ vsc_creds.username }}"
       check_login: True
 
+  - meta: reset_connection
+
   - name: Register uptime after reboot
     sros_command:
       commands:
@@ -96,7 +110,21 @@
 
   - name: Verify reboot happened successfully
     assert:
-      that: "uptime_after_reboot < uptime_before_reboot"
+      that: "uptime_after_reboot.stdout < uptime_before_reboot.stdout"
       fail_msg: "System uptime after reboot step suggests there were issues during reboot. Check log for errors."
+
+  - name: Get primary config filename (ignoring errors)
+    set_fact:
+      vsc_config_filename: "{{ lookup('file', backup_folder + '/primary_config_filename') }}"
+    register: primary_config_file
+    ignore_errors: True
+
+  - name: Copy VSC config file to the VSC
+    delegate_to: localhost
+    shell: >-
+      sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+      {{ proxy_conf | default('') }} {{ backup_folder }}/{{ vsc_config_filename }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    when: primary_config_file.msg is not defined
 
   when: target_server_type is match('kvm') or target_server_type is match('vcenter') or target_server_type is match('openstack') or target_server_type is match("none")

@@ -22,7 +22,7 @@
 
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
-      when: add_extra_disk | default(False)
+      when: add_extra_disk | default(False) and target_server_type | default("kvm") is match("kvm")
 
     - name: Lets run VSTAT predeploy hooks
       include_role:
@@ -39,7 +39,7 @@
   roles:
     - vstat-predeploy
 
-- hosts: primary_vstats
+- hosts: primary_vstats,data_vstats,add_data_vstats
   gather_facts: no
   pre_tasks:
     - name: Check if VSTATs prereq satisfied for predeploy

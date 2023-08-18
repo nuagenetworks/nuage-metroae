@@ -1,5 +1,22 @@
+- name: Enable IPv6 networking
+  delegate_to: localhost
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ vm_name }}"
+    vm_username: "{{ vm_username }}"
+    vm_password: "{{ vm_password }}"
+    vm_shell: /opt/vsd/bin/vsd-switch-ipv6.sh
+  when:
+    - groups['vsds'] is defined and inventory_hostname in groups['vsds']
+    - enable_ipv6 is defined
+
 - name: Writing eth0 network script file to the VM
-  connection: local
+  delegate_to: localhost
   vmware_vm_shell:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -14,7 +31,7 @@
     vm_shell_args: " '{{ ifcfg_eth0_contents }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
 
 - name: Set the owner and group on the eth0 network script file in the VM
-  connection: local
+  delegate_to: localhost
   vmware_vm_shell:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -29,7 +46,7 @@
     vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
 
 - name: Writing network file to the VM
-  connection: local
+  delegate_to: localhost
   vmware_vm_shell:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -44,7 +61,7 @@
     vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
 
 - name: Set the owner and group on the network file in the VM
-  connection: local
+  delegate_to: localhost
   vmware_vm_shell:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -61,7 +78,7 @@
 - block:
 
   - name: Set hostname for VCenter for current session
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -76,7 +93,7 @@
       vm_shell_args: " '{{ inventory_hostname }}'"
 
   - name: Writing hostname file to the VM
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -91,7 +108,7 @@
       vm_shell_args: " '{{ lookup('template', 'hostname.j2') }}' > /etc/hostname"
 
   - name: Set the owner and group on the hostname file in the VM
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"

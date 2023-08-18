@@ -8,6 +8,8 @@ import re
 import subprocess
 import sys
 import traceback
+from builtins import input
+from io import open
 
 METROAE_CONTACT = "devops@nuagenetworks.net"
 
@@ -32,23 +34,6 @@ WIZARD_SCRIPT = """
   description: |
 
       The following steps will be performed:
-
-- step: Verify proper MetroAE installation
-  description: |
-      This step will verify that the MetroAE tool has been properly installed
-      with all required libraries.
-  verify_install:
-    missing_msg: |
-
-      We would like to run setup to install these.  The command is
-      "sudo ./setup.sh" if you'd like to run it yourself.
-      Running this command requires sudo access. You may be asked
-      for the sudo password.
-    wrong_os_msg: |
-
-      The OS is not recognized.  MetroAE requires a Linux based operating
-      system such as CentOS or Ubuntu.  A docker container version of MetroAE
-      is available for other operating system types.
 
 - step: Unzip image files
   description: |
@@ -81,7 +66,7 @@ WIZARD_SCRIPT = """
 
 - step: Auto-discover existing components
   description: |
-      This optional step can beb used to discover components that are already
+      This optional step can be used to discover components that are already
       running in your network.  By specifying the connection information of
       the hypervisors, any VMs running on these systems will be analyzed. You
       will be given the option to identify VMs as VSP components and to have
@@ -192,6 +177,12 @@ WIZARD_SCRIPT = """
     item_name: NUH
     upgrade_vmname: false
 
+- step: NUH External Interfaces deployment file
+  description: |
+      This step will create or modify the nuh_external_interfaces.yml file in your deployment.
+      This file provides parameters for the external interfaces on the NUHs in your deployment.
+  create_interfaces: {}
+
 - step: VNSUtil deployment file
   description: |
       This step will create or modify the vnsutils.yml file in your deployment.
@@ -286,8 +277,10 @@ class Wizard(object):
         self.current_action_idx = 0
         self.progress_display_count = 0
         self.progress_display_rate = 1
+        self.non_interactive = False
 
         if "NON_INTERACTIVE" in os.environ:
+            self.non_interactive = True
             self.args = list(sys.argv)
             self.args.pop(0)
         else:
@@ -308,64 +301,24 @@ class Wizard(object):
     def message(self, action, data):
         raw_msg = self._get_field(data, "text")
         format_msg = raw_msg.format(contact=METROAE_CONTACT)
-        self._print(format_msg)
+        print(format_msg)
 
     def list_steps(self, action, data):
         for step in self.script:
             if "step" in step:
-                self._print("  - " + step["step"])
-
-    def verify_install(self, action, data):
-        self._print(u"\nVerifying MetroAE installation")
-
-        if self.in_container:
-            self._print("\nWizard is being run inside a Docker container.  "
-                        "No need to verify installation.  Skipping step...")
-            return
-
-        if not os.path.isfile("/etc/os-release"):
-            self._record_problem("wrong_os", "Unsupported operating system")
-            self._print(self._get_field(data, "wrong_os_msg"))
-
-            choice = self._input("Do you wish to continue anyway?", 0,
-                                 ["(Y)es", "(n)o"])
-
-            if choice == 1:
-                self._print("Quitting wizard...")
-                exit(0)
-
-        missing = self._verify_pip()
-        yum_missing = self._verify_yum()
-
-        missing.extend(yum_missing)
-
-        if len(missing) == 0:
-            self._unrecord_problem("install_libraries")
-            self._print(u"\nMetroAE Installation OK!")
-        else:
-            self._record_problem(
-                "install_libraries",
-                u"Your MetroAE installation is missing libraries")
-            self._print(u"\nYour MetroAE installation is missing libraries:\n")
-            self._print("\n".join(missing))
-            self._print(self._get_field(data, "missing_msg"))
-            choice = self._input("Do you want to run setup now?", 0,
-                                 ["(Y)es", "(n)o"])
-
-            if choice != 1:
-                self._run_setup()
+                print("  - " + step["step"])
 
     def unzip_images(self, action, data):
         valid = False
         while not valid:
             if self.in_container:
-                self._print(self._get_field(data, "container_msg"))
+                print(self._get_field(data, "container_msg"))
                 zip_dir = self._input("Please enter the directory relative to "
                                       "the metroae_data mount point that "
                                       "contains your zip files", "")
 
                 if zip_dir.startswith("/"):
-                    self._print("\nDirectory must be a relative path.")
+                    print("\nDirectory must be a relative path.")
                     continue
 
                 full_zip_dir = os.path.join("/metroae_data", zip_dir)
@@ -380,11 +333,11 @@ class Wizard(object):
                     "Directory not found. Would you like to skip unzipping",
                     0, ["(Y)es", "(n)o"])
                 if choice != 1:
-                    self._print("Skipping unzip step...")
+                    print("Skipping unzip step...")
                     return
             elif not os.path.isdir(full_zip_dir):
-                self._print("%s is not a directory, please enter the directory"
-                            " containing the zipped files" % zip_dir)
+                print("%s is not a directory, please enter the directory"
+                      " containing the zipped files" % zip_dir)
             else:
                 valid = True
 
@@ -395,7 +348,7 @@ class Wizard(object):
                                         "to the metroae_data mount point to "
                                         "unzip to")
                 if unzip_dir.startswith("/"):
-                    self._print("\nDirectory must be a relative path.")
+                    print("\nDirectory must be a relative path.")
                 else:
                     valid = True
 
@@ -412,7 +365,7 @@ class Wizard(object):
         if choice == 0:
             self._run_unzip(full_zip_dir, full_unzip_dir)
         else:
-            self._print("Skipping unzip step...")
+            print("Skipping unzip step...")
 
     def create_deployment(self, action, data):
         valid = False
@@ -421,11 +374,11 @@ class Wizard(object):
                 "Please enter the name of the deployment (will be the "
                 "directory name)", "default")
             if "/" in deployment_name:
-                self._print("\nA deployment name cannot contain a slash "
-                            "because it will be a directory name")
+                print("\nA deployment name cannot contain a slash "
+                      "because it will be a directory name")
             elif " " in deployment_name:
-                self._print("\nA deployment name can contain a space, but it "
-                            "will always have to be specified with quotes")
+                print("\nA deployment name can contain a space, but it "
+                      "will always have to be specified with quotes")
                 choice = self._input("Do you want use it?", 0,
                                      ["(Y)es", "(n)o"])
                 if choice != 1:
@@ -437,18 +390,18 @@ class Wizard(object):
         deployment_dir = os.path.join(self.base_deployment_path,
                                       deployment_name)
         if os.path.isdir(deployment_dir):
-            self._print("\nThe deployment directory was found")
+            print("\nThe deployment directory was found")
             found = True
         else:
-            self._print("")
+            print("")
             choice = self._input('Create deployment directory: "%s"?' %
                                  deployment_name,
                                  0, ["(Y)es", "(n)o"])
             if choice == 1:
-                self._print("Skipping deployment creation.")
+                print("Skipping deployment creation.")
                 return
 
-        self._print("Deployment directory: " + deployment_dir)
+        print("Deployment directory: " + deployment_dir)
         self.state["deployment_name"] = deployment_name
         self.state["deployment_dir"] = deployment_dir
 
@@ -494,7 +447,7 @@ class Wizard(object):
             deployment = self._read_deployment_file(deployment_file,
                                                     is_list=False)
         else:
-            self._print(deployment_file + " not found. It will be created.")
+            print(deployment_file + " not found. It will be created.")
             deployment = dict()
 
         self._setup_unzip_dir(deployment)
@@ -524,13 +477,13 @@ class Wizard(object):
         if self._check_skip_for_csv("upgrade"):
             return
 
-        self._print("")
+        print("")
         choice = self._input("Will you be performing an upgrade?", 0,
                              ["(Y)es", "(N)o"])
         if choice == 1:
             if "upgrade" in self.state:
                 del self.state["upgrade"]
-            self._print("Skipping step...")
+            print("Skipping step...")
             return
 
         self.state["upgrade"] = True
@@ -544,7 +497,7 @@ class Wizard(object):
             deployment = self._read_deployment_file(deployment_file,
                                                     is_list=False)
         else:
-            self._print(deployment_file + " not found. It will be created.")
+            print(deployment_file + " not found. It will be created.")
             deployment = dict()
 
         self._setup_upgrade(deployment, data)
@@ -571,22 +524,22 @@ class Wizard(object):
             deployment = self._read_deployment_file(deployment_file,
                                                     is_list=True)
         else:
-            self._print(deployment_file + " not found. It will be created.")
+            print(deployment_file + " not found. It will be created.")
             deployment = list()
 
         self._setup_target_server_type()
 
-        self._print("\nPlease enter your %s deployment type\n" % item_name)
+        print("\nPlease enter your %s deployment type\n" % item_name)
 
         amount = self._get_number_components(deployment, data)
         deployment = deployment[0:amount]
 
         if not is_nsgv:
-            self._print("\nIf DNS is configured properly, IP addresses can be "
-                        "auto-discovered.")
+            print("\nIf DNS is configured properly, IP addresses can be "
+                  "auto-discovered.")
 
         for i in range(amount):
-            self._print("\n%s %d\n" % (item_name, i + 1))
+            print("\n%s %d\n" % (item_name, i + 1))
             if len(deployment) == i:
                 deployment.append(dict())
 
@@ -608,7 +561,7 @@ class Wizard(object):
                 self._setup_vmname(deployment, i, hostname, with_upgrade)
 
             if not is_nsgv:
-                self._setup_ip_addresses(deployment, i, hostname, is_vsc)
+                self._setup_ip_addresses(deployment, i, hostname, is_vsc, is_nuh)
             else:
                 component = deployment[i]
                 self._setup_target_server(component)
@@ -624,16 +577,46 @@ class Wizard(object):
         else:
             self._generate_deployment_file(schema, deployment_file, deployment)
 
+    def create_interfaces(self, action, data):
+        if self._check_skip_for_csv("nuh_external_interfaces"):
+            return
+
+        print("")
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+
+        deployment_file = os.path.join(deployment_dir, "nuh_external_interfaces.yml")
+        if os.path.isfile(deployment_file):
+            deployment = self._read_deployment_file(deployment_file,
+                                                    is_list=False)
+        else:
+            print(deployment_file + " not found. It will be created.")
+            deployment = list()
+
+        default = 0
+        ext_interface_amount = self._input("Number of external interfaces to setup", default, datatype="int")
+
+        for i in range(ext_interface_amount):
+            print("\n%s %d\n" % ("NUH External Interface", i + 1))
+            deployment.append(dict())
+            self._setup_external_interfaces(deployment, data, i)
+        if ext_interface_amount == 0:
+            if os.path.isfile(deployment_file):
+                os.remove(deployment_file)
+        else:
+            self._generate_deployment_file("nuh_external_interfaces", deployment_file, deployment)
+
     def create_bootstrap(self, action, data):
         if self._check_skip_for_csv("nsgv_bootstrap"):
             return
 
-        self._print("")
+        print("")
         if "metro_bootstrap" not in self.state:
             choice = self._input("Will you be using metro to bootstrap NSGvs?",
                                  1, ["(y)es", "(N)o"])
             if choice == 1:
-                self._print("Skipping step...")
+                print("Skipping step...")
                 return
 
         deployment_dir = self._get_deployment_dir()
@@ -645,7 +628,7 @@ class Wizard(object):
             deployment = self._read_deployment_file(deployment_file,
                                                     is_list=False)
         else:
-            self._print(deployment_file + " not found. It will be created.")
+            print(deployment_file + " not found. It will be created.")
             deployment = dict()
 
         self._setup_bootstrap(deployment, data)
@@ -677,17 +660,17 @@ class Wizard(object):
             "Enter the username for the target servers (hypervisors)", default)
         self.state["target_server_username"] = username
 
-        self._print("\nWe will now configure SSH access to the target servers"
-                    " (hypervisors).  This will likely require the SSH"
-                    " password for each system would need to be entered.")
+        print("\nWe will now configure SSH access to the target servers"
+              " (hypervisors).  This will likely require the SSH"
+              " password for each system would need to be entered.")
 
         if self.in_container:
-            self._print(self._get_field(data, "container_msg"))
+            print(self._get_field(data, "container_msg"))
 
         choice = self._input("Setup SSH now?", 0, ["(Y)es", "(n)o"])
 
         if choice == 1:
-            self._print("Skipping step...")
+            print("Skipping step...")
             return
 
         for server in servers:
@@ -713,17 +696,17 @@ class Wizard(object):
 
     def complete_wizard(self, action, data):
         if self._has_problems():
-            self._print(self._get_field(data, "problem_msg"))
+            print(self._get_field(data, "problem_msg"))
             self._list_problems()
 
-        self._print(self._get_field(data, "finish_msg"))
+        print(self._get_field(data, "finish_msg"))
         choice = self._input(None, None, ["(q)uit", "(b)ack"])
 
         if choice == 1:
             self.current_action_idx -= 2
             return
         else:
-            self._print(self._get_field(data, "complete_msg"))
+            print(self._get_field(data, "complete_msg"))
             metro = "./metroae"
             if self.in_container:
                 metro = "metroae"
@@ -733,12 +716,12 @@ class Wizard(object):
                     self.state["deployment_name"] != "default"):
                 deployment = self.state["deployment_name"]
             if "upgrade" in self.state:
-                self._print(
+                print(
                     self._get_field(data, "upgrade_msg").format(
                         metro=metro,
                         deployment=deployment))
             else:
-                self._print(
+                print(
                     self._get_field(data, "install_msg").format(
                         metro=metro,
                         deployment=deployment))
@@ -747,9 +730,6 @@ class Wizard(object):
     #
     # Private class internals
     #
-
-    def _print(self, msg):
-        print msg.encode("utf-8")
 
     def _print_progress(self):
         if self.progress_display_count % self.progress_display_rate == 0:
@@ -761,15 +741,15 @@ class Wizard(object):
         input_prompt = self._get_input_prompt(prompt, default, choices)
         value = None
 
-        if "NON_INTERACTIVE" in os.environ:
+        if self.non_interactive:
             if len(self.args) < 1:
                 raise Exception(
                     "Out of args for non-interactive input for %s" %
                     input_prompt)
             user_value = self.args.pop(0)
             if prompt is not None:
-                self._print(prompt)
-            self._print("From args: " + user_value)
+                print(prompt)
+            print("From args: " + user_value)
             value = self._validate_input(user_value, default,
                                          choices, datatype)
             if value is None:
@@ -781,7 +761,7 @@ class Wizard(object):
                 if datatype == "password":
                     user_value = getpass.getpass(input_prompt)
                 else:
-                    user_value = raw_input(input_prompt)
+                    user_value = input(input_prompt)
                 value = self._validate_input(user_value, default, choices,
                                              datatype)
 
@@ -822,32 +802,32 @@ class Wizard(object):
             if default is not None:
                 return default
             else:
-                self._print("\nRequired field, please enter a value\n")
+                print("\nRequired field, please enter a value\n")
                 return None
 
         if choices is not None:
             value = self._match_choice(user_value, choices)
             if value is None:
-                self._print(
+                print(
                     "\nValue is not a valid choice, please reenter\n")
         elif datatype == "ipaddr":
             value = self._validate_ipaddr(user_value)
             if value is None:
-                self._print("\nValue is not a valid ipaddress\n")
+                print("\nValue is not a valid ipaddress\n")
         elif datatype == "int":
             try:
                 value = int(user_value)
             except ValueError:
-                self._print("\nValue is not a valid integer\n")
+                print("\nValue is not a valid integer\n")
                 return None
         elif datatype == "hostname":
             value = self._validate_hostname(user_value)
             if value is None:
-                self._print("\nValue is not a valid hostname\n")
+                print("\nValue is not a valid hostname\n")
         elif datatype == "version":
-            allowed = re.compile("^[\d][.][\d][.]([A-Z\d]+)$", re.IGNORECASE)
+            allowed = re.compile("^[\d]+[.][\d]+[.]([A-Z\d]+)$", re.IGNORECASE)
             if not allowed.match(user_value):
-                self._print("\nValue is not a valid version\n")
+                print("\nValue is not a valid version\n")
                 return None
             value = user_value
         else:
@@ -864,9 +844,9 @@ class Wizard(object):
             except netaddr.core.AddrFormatError:
                 return None
         except ImportError:
-            self._print("\nWarning: Python netaddr library not installed. "
-                        "Cannot validate IP address.  This library is also "
-                        "required for MetroAE to run properly.")
+            print("\nWarning: Python netaddr library not installed. "
+                  "Cannot validate IP address.  This library is also "
+                  "required for MetroAE to run properly.")
             return user_value
 
     def _validate_hostname(self, hostname):
@@ -915,20 +895,20 @@ class Wizard(object):
             self._install_yaml()
 
     def _install_yaml(self):
-        self._print("This wizard requires PyYAML library to be installed."
-                    "  Running this command requires sudo access.  You may be "
-                    "asked for the sudo password.\n")
+        print("This wizard requires PyYAML library to be installed."
+              "  Running this command requires sudo access.  You may be "
+              "asked for the sudo password.\n")
         choice = self._input("Install it now?", 0,
                              ["(Y)es", "(n)o"])
         if choice == 1:
-            self._print("Please install PyYAML and run the wizard again.")
+            print("Please install PyYAML and run the wizard again.")
             exit(1)
 
         rc, output_lines = self._run_shell("sudo pip install " + YAML_LIBRARY)
         if rc != 0:
-            self._print("\n".join(output_lines))
-            self._print("Could not install PyYAML, exit code: %d" % rc)
-            self._print("Please install PyYAML and run the wizard again.")
+            print("\n".join(output_lines))
+            print("Could not install PyYAML, exit code: %d" % rc)
+            print("Please install PyYAML and run the wizard again.")
             exit(1)
 
     def _get_value(self, deployment, field):
@@ -990,15 +970,15 @@ class Wizard(object):
                     self.current_action_idx += 1
                     continue
                 if choice == 3:
-                    self._print("Exiting MetroAE wizard. All progress made "
-                                "has been saved.")
+                    print("Exiting MetroAE wizard. All progress made "
+                          "has been saved.")
                     exit(0)
 
             try:
                 self._run_action(current_action)
             except KeyboardInterrupt:
-                self._print("\n\nInterrupt signal received. All progress made "
-                            "before current step has been saved.\n")
+                print("\n\nInterrupt signal received. All progress made "
+                      "before current step has been saved.\n")
                 choice = self._input(
                     "Would you like to quit?",
                     1, ["(y)es", "(N)o"])
@@ -1009,13 +989,13 @@ class Wizard(object):
             self.current_action_idx += 1
 
     def _display_step(self, action):
-        self._print("")
+        print("")
 
         if "step" in action:
-            self._print("**** " + action["step"] + " ****\n")
+            print("**** " + action["step"] + " ****\n")
 
         if "description" in action:
-            self._print(action["description"])
+            print(action["description"])
 
     def _run_action(self, action):
         action_name = self._get_action_name(action)
@@ -1024,7 +1004,7 @@ class Wizard(object):
         action_func(action, data)
 
     def _get_action_name(self, action):
-        keys = action.keys()
+        keys = list(action.keys())
         for standard_field in STANDARD_FIELDS:
             if standard_field in keys:
                 keys.remove(standard_field)
@@ -1049,7 +1029,8 @@ class Wizard(object):
                                    shell=True,
                                    cwd=self.metro_path,
                                    stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT)
+                                   stderr=subprocess.STDOUT,
+                                   encoding='utf8')
 
         output_lines = list()
         rc = self._capture_output(process, output_lines)
@@ -1063,7 +1044,7 @@ class Wizard(object):
                 line = process.stdout.readline().rstrip("\n")
                 output_lines.append(line)
                 if "DEBUG_WIZARD" in os.environ:
-                    self._print(line)
+                    print(line)
                 else:
                     self._print_progress()
             else:
@@ -1072,7 +1053,7 @@ class Wizard(object):
                 for line in lines.split("\n"):
                     output_lines.append(line)
                     if "DEBUG_WIZARD" in os.environ:
-                        self._print(line)
+                        print(line)
                     else:
                         self._print_progress()
                 return retcode
@@ -1096,22 +1077,22 @@ class Wizard(object):
     def _list_problems(self):
         if self._has_problems():
             for descr in self.state["problems"].values():
-                self._print(" - " + descr)
+                print(" - " + descr)
 
     def _verify_pip(self):
         try:
             rc, output_lines = self._run_shell("pip freeze")
             if rc != 0:
-                self._print("\n".join(output_lines))
+                print("\n".join(output_lines))
                 raise Exception("pip freeze exit-code: %d" % rc)
 
             with open("pip_requirements.txt", "r") as f:
                 required_libraries = f.read().split("\n")
 
         except Exception as e:
-            self._print("\nAn error occurred while reading pip libraries: " +
-                        str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while reading pip libraries: " +
+                  str(e))
+            print("Please contact: " + METROAE_CONTACT)
             return ["Could not deterimine pip libraries"]
 
         return self._compare_libraries(required_libraries, output_lines)
@@ -1121,36 +1102,36 @@ class Wizard(object):
             self.progress_display_rate = 30
             rc, output_lines = self._run_shell("yum list")
             if rc != 0:
-                self._print("\n".join(output_lines))
+                print("\n".join(output_lines))
                 raise Exception("yum list exit-code: %d" % rc)
 
             with open("yum_requirements.txt", "r") as f:
                 required_libraries = f.read().split("\n")
 
         except Exception as e:
-            self._print("\nAn error occurred while reading yum libraries: " +
-                        str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while reading yum libraries: " +
+                  str(e))
+            print("Please contact: " + METROAE_CONTACT)
             return ["Could not deterimine yum libraries"]
 
         return self._compare_libraries(required_libraries, output_lines)
 
     def _run_setup(self):
         cmd = "sudo ./setup.sh"
-        self._print("Command: " + cmd)
-        self._print("Running setup (may ask for sudo password)")
+        print("Command: " + cmd)
+        print("Running setup (may ask for sudo password)")
         try:
             rc, output_lines = self._run_shell(cmd)
             if rc != 0:
-                self._print("\n".join(output_lines))
+                print("\n".join(output_lines))
                 raise Exception("setup.sh exit-code: %d" % rc)
 
             self._unrecord_problem("install_libraries")
-            self._print(u"\nMetroAE setup completed successfully!")
+            print(u"\nMetroAE setup completed successfully!")
         except Exception as e:
-            self._print("\nAn error occurred while running setup: " +
-                        str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while running setup: " +
+                  str(e))
+            print("Please contact: " + METROAE_CONTACT)
 
     def _compare_libraries(self, required_libraries, installed_libraries):
         missing = list()
@@ -1176,47 +1157,47 @@ class Wizard(object):
 
     def _run_unzip(self, zip_dir, unzip_dir):
         cmd = "./nuage-unzip.sh %s %s" % (zip_dir, unzip_dir)
-        self._print("Command: " + cmd)
-        self._print("Unzipping files from %s to %s" % (zip_dir, unzip_dir))
+        print("Command: " + cmd)
+        print("Unzipping files from %s to %s" % (zip_dir, unzip_dir))
         for f in glob.glob(os.path.join(zip_dir, "*.gz")):
-            self._print(f)
+            print(f)
         try:
             rc, output_lines = self._run_shell(cmd)
             if rc != 0:
                 self._record_problem(
                     "unzip_files", "Unable to unzip files")
-                self._print("\n".join(output_lines))
+                print("\n".join(output_lines))
                 raise Exception("nuage-unzip.sh exit-code: %d" % rc)
 
             self._unrecord_problem("unzip_files")
-            self._print("\nFiles unzipped successfully!")
+            print("\nFiles unzipped successfully!")
         except Exception as e:
             self._record_problem(
                 "unzip_files", "Error occurred while unzipping files")
-            self._print("\nAn error occurred while unzipping files: " +
-                        str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while unzipping files: " +
+                  str(e))
+            print("Please contact: " + METROAE_CONTACT)
 
     def _get_deployment_dir(self):
         if "deployment_dir" not in self.state:
-            self._print("Creating a deployment file requires a deployment to"
-                        " be specified.  This step will be skipped if not"
-                        " provided.")
+            print("Creating a deployment file requires a deployment to"
+                  " be specified.  This step will be skipped if not"
+                  " provided.")
             choice = self._input("Do you want to specify a deployment now?", 0,
                                  ["(Y)es", "(n)o"])
             if choice != 1:
                 self.create_deployment(None, None)
 
             if "deployment_dir" not in self.state:
-                self._print("No deployment specified, skipping step")
+                print("No deployment specified, skipping step")
                 return None
 
         return self.state["deployment_dir"]
 
     def _read_deployment_file(self, deployment_file, is_list):
-        with open(deployment_file, "r") as f:
+        with open(deployment_file, "r", encoding='utf-8') as f:
             import yaml
-            deployment = yaml.safe_load(f.read().decode("utf-8"))
+            deployment = yaml.safe_load(f.read())
             if is_list and type(deployment) != list:
                 deployment = list()
             if not is_list and type(deployment) != dict:
@@ -1245,14 +1226,14 @@ class Wizard(object):
             valid_ssh = self._setup_discovery_ssh(username, hostname)
 
             if not valid_ssh:
-                self._print("Auto-discovery requires password-less SSH access")
+                print("Auto-discovery requires password-less SSH access")
                 return
 
             if self._verify_kvm_hypervisor(username, hostname):
                 self._discover_kvm_components(username, hostname)
             else:
-                self._print("Unsupported hypervisor type for auto-discovery "
-                            "(only KVM and vCenter supported)")
+                print("Unsupported hypervisor type for auto-discovery "
+                      "(only KVM and vCenter supported)")
                 return
 
     def _setup_discovery_ssh(self, username, hostname):
@@ -1268,9 +1249,9 @@ class Wizard(object):
         if choice != 0:
             return False
 
-        self._print("\nWe will now configure SSH access to the target "
-                    "server (hypervisors).  This will likely require the "
-                    "SSH password to be entered.\n")
+        print("\nWe will now configure SSH access to the target "
+              "server (hypervisors).  This will likely require the "
+              "SSH password to be entered.\n")
 
         valid_ssh = self._setup_ssh(username, hostname)
 
@@ -1280,8 +1261,8 @@ class Wizard(object):
         try:
             import requests
         except ImportError:
-            self._print("Could not import libraries required to communicate "
-                        "with vCenter. Was setup completed successfully?")
+            print("Could not import libraries required to communicate "
+                  "with vCenter. Was setup completed successfully?")
             return False
 
         try:
@@ -1306,7 +1287,7 @@ class Wizard(object):
                 self.state["target_server_type"] = "kvm"
                 return True
         except Exception:
-            self._print("Could not connect to hypervisor")
+            print("Could not connect to hypervisor")
             pass
 
         return False
@@ -1317,7 +1298,7 @@ class Wizard(object):
             if vms is None:
                 return False
 
-            self._print("\nFound VMs: " + ", ".join(sorted(vms.keys())))
+            print("\nFound VMs: " + ", ".join(sorted(vms.keys())))
 
             for vm_name, vm in vms.iteritems():
                 vm_info = self._discover_vcenter_vm_info(vm, hostname)
@@ -1326,13 +1307,13 @@ class Wizard(object):
                     try:
                         self._add_discovered_vm(vm_info, choice)
                     except Exception:
-                        self._print("\nCould not add VM to deployment.")
+                        print("\nCould not add VM to deployment.")
             return True
 
         except Exception as e:
-            self._print("\nAn error occurred while attempting to auto-discover"
-                        " components: " + str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while attempting to auto-discover"
+                  " components: " + str(e))
+            print("Please contact: " + METROAE_CONTACT)
 
         return False
 
@@ -1343,8 +1324,8 @@ class Wizard(object):
             import ssl
             import atexit
         except ImportError:
-            self._print("Could not import libraries required to communicate "
-                        "with vCenter. Was setup completed successfully?")
+            print("Could not import libraries required to communicate "
+                  "with vCenter. Was setup completed successfully?")
             return None
 
         try:
@@ -1356,7 +1337,7 @@ class Wizard(object):
             atexit.register(Disconnect, si)
 
         except Exception:
-            self._print("Could not connect to vCenter")
+            print("Could not connect to vCenter")
             return None
 
         return self._get_vcenter_vms_dict(si.content, [vim.VirtualMachine])
@@ -1454,24 +1435,24 @@ class Wizard(object):
             pass
 
     def _verify_vcenter_discovery(self, vm_info):
-        self._print("\n\nDiscovered VM")
-        self._print("-------------")
-        self._print("VM name: " + vm_info["vm_name"])
-        self._print("Product: " + vm_info["product"])
-        self._print("Datacenter: " + vm_info["datacenter"])
-        self._print("Cluster: " + vm_info["cluster"])
-        self._print("Datastore: " + vm_info["datastore"])
-        self._print("Interfaces:")
+        print("\n\nDiscovered VM")
+        print("-------------")
+        print("VM name: " + vm_info["vm_name"])
+        print("Product: " + vm_info["product"])
+        print("Datacenter: " + vm_info["datacenter"])
+        print("Cluster: " + vm_info["cluster"])
+        print("Datastore: " + vm_info["datastore"])
+        print("Interfaces:")
         for interface in vm_info["interfaces"]:
-            self._print(" - address: " + interface["address"])
-            self._print("   hostname: " + interface["hostname"])
-            self._print("   gateway: " + interface["gateway"])
-            self._print("   prefix length: " + str(interface["prefix"]))
+            print(" - address: " + interface["address"])
+            print("   hostname: " + interface["hostname"])
+            print("   gateway: " + interface["gateway"])
+            print("   prefix length: " + str(interface["prefix"]))
 
-        self._print("\nThis VM can be added to your deployment.  There will be"
-                    " an opportunity to modify it in later steps of the wizard"
-                    " or those steps can be skipped if the discovered VMs are "
-                    "correct.\n")
+        print("\nThis VM can be added to your deployment.  There will be"
+              " an opportunity to modify it in later steps of the wizard"
+              " or those steps can be skipped if the discovered VMs are "
+              "correct.\n")
         return self._vcenter_component_choice(vm_info["product"])
 
     def _vcenter_component_choice(self, product):
@@ -1498,12 +1479,12 @@ class Wizard(object):
                     try:
                         self._add_discovered_vm(vm_info, choice)
                     except Exception:
-                        self._print("\nCould not add VM to deployment.")
+                        print("\nCould not add VM to deployment.")
             return True
         except Exception as e:
-            self._print("\nAn error occurred while attempting to auto-discover"
-                        " components: " + str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while attempting to auto-discover"
+                  " components: " + str(e))
+            print("Please contact: " + METROAE_CONTACT)
 
         return False
 
@@ -1512,10 +1493,10 @@ class Wizard(object):
                                                    "sudo virsh list --name")
         if rc == 0:
             names = sorted([x for x in output_lines if x.strip() != ""])
-            self._print("\nFound VMs: " + ", ".join(names))
+            print("\nFound VMs: " + ", ".join(names))
             return names
         else:
-            self._print("\nError while discovering VMs on %s\n%s" % (
+            print("\nError while discovering VMs on %s\n%s" % (
                 hostname, "\n".join(output_lines)))
             return list()
 
@@ -1544,7 +1525,7 @@ class Wizard(object):
         try:
             import xml.etree.ElementTree as ET
         except ImportError:
-            self._print(
+            print(
                 "Could not import the libraries to parse KVM XML. Discovery "
                 "not possible.")
             return None
@@ -1568,7 +1549,7 @@ class Wizard(object):
             return vm_info
 
         except Exception:
-            self._print(
+            print(
                 "Could not parse KVM XML. Skipping VM.")
             return None
 
@@ -1610,22 +1591,22 @@ class Wizard(object):
             pass
 
     def _verify_kvm_discovery(self, vm_info):
-        self._print("\n\nDiscovered VM")
-        self._print("-------------")
-        self._print("VM name: " + vm_info["vm_name"])
-        self._print("Image: " + vm_info["image_name"])
-        self._print("Interfaces:")
+        print("\n\nDiscovered VM")
+        print("-------------")
+        print("VM name: " + vm_info["vm_name"])
+        print("Image: " + vm_info["image_name"])
+        print("Interfaces:")
         for interface in vm_info["interfaces"]:
-            self._print(" - bridge: " + interface["bridge"])
-            self._print("   address: " + interface["address"])
-            self._print("   hostname: " + interface["hostname"])
-            self._print("   gateway: " + interface["gateway"])
-            self._print("   prefix length: " + str(interface["prefix"]))
+            print(" - bridge: " + interface["bridge"])
+            print("   address: " + interface["address"])
+            print("   hostname: " + interface["hostname"])
+            print("   gateway: " + interface["gateway"])
+            print("   prefix length: " + str(interface["prefix"]))
 
-        self._print("\nThis VM can be added to your deployment.  There will be"
-                    " an opportunity to modify it in later steps of the wizard"
-                    " or those steps can be skipped if the discovered VMs are "
-                    "correct.\n")
+        print("\nThis VM can be added to your deployment.  There will be"
+              " an opportunity to modify it in later steps of the wizard"
+              " or those steps can be skipped if the discovered VMs are "
+              "correct.\n")
         return self._kvm_component_choice(vm_info["image_name"])
 
     def _kvm_component_choice(self, image_name):
@@ -1687,7 +1668,7 @@ class Wizard(object):
             self._add_discovered_vm_nsgv(vm_info, component)
         else:
             # UNKNOWN
-            self._print("\nError: Unknown choice for discovered VM\n")
+            print("\nError: Unknown choice for discovered VM\n")
             return
 
         deployment_dir = self._get_deployment_dir()
@@ -1772,7 +1753,7 @@ class Wizard(object):
             from convert_csv_to_deployment import CsvDeploymentConverter
             converter = CsvDeploymentConverter()
         except ImportError:
-            self._print(
+            print(
                 "Could not import the libraries to parse CSV files."
                 "  Please make sure setup.sh has been run.")
             return
@@ -1786,7 +1767,7 @@ class Wizard(object):
                     "File not found.  Would you like to skip the import?",
                     0, ["(Y)es", "(n)o"])
                 if choice != 1:
-                    self._print("Skipping import step...")
+                    print("Skipping import step...")
                     return
             else:
                 valid = True
@@ -1794,16 +1775,16 @@ class Wizard(object):
         try:
             converter.convert(csv_file, deployment_dir)
         except Exception as e:
-            self._print(
+            print(
                 "The following errors occurred while parsing the CSV file")
-            self._print(str(e))
-            self._print("Please correct these and rerun this step")
+            print(str(e))
+            print("Please correct these and rerun this step")
             return
 
         data = converter.get_data()
         self.state["csv_data"] = data
-        self._print("Imported the following schemas from CSV: " +
-                    ", ".join(data.keys()))
+        print("Imported the following schemas from CSV: " +
+              ", ".join(data.keys()))
 
         self._read_csv_data(data)
 
@@ -1825,18 +1806,18 @@ class Wizard(object):
 
     def _check_skip_for_csv(self, schema_name):
         if "csv_data" in self.state and schema_name in self.state["csv_data"]:
-            self._print("This step has been handled via import from CSV.")
+            print("This step has been handled via import from CSV.")
 
             choice = self._input("Do you still wish to continue?",
                                  1, ["(y)es", "(N)o"])
             if choice == 1:
-                self._print("Skipping step...")
+                print("Skipping step...")
                 return True
 
         return False
 
     def _setup_dns(self, deployment, data):
-        self._print(self._get_field(data, "dns_setup_msg"))
+        print(self._get_field(data, "dns_setup_msg"))
 
         dns_domain_default = None
         if "dns_domain" in deployment:
@@ -1852,7 +1833,7 @@ class Wizard(object):
         else:
             vsd_fqdn_default = "xmpp"
 
-        self._print(self._get_field(data, "vsd_fqdn_msg"))
+        print(self._get_field(data, "vsd_fqdn_msg"))
 
         vsd_fqdn = self._input("VSD FQDN (we'll add .%s)" % dns_domain,
                                vsd_fqdn_default, datatype="hostname")
@@ -1881,7 +1862,7 @@ class Wizard(object):
         deployment["dns_server_list"] = dns_server_list
 
     def _setup_ntp(self, deployment, data):
-        self._print(self._get_field(data, "ntp_setup_msg"))
+        print(self._get_field(data, "ntp_setup_msg"))
 
         if "ntp_server_list" in deployment:
             ntp_servers_default = ", ".join(deployment["ntp_server_list"])
@@ -1892,7 +1873,7 @@ class Wizard(object):
         while ntp_server_list is None:
 
             ntp_server_list = self._input(
-                "Enter NTP server IPs in dotted decmial format (separate "
+                "Enter NTP server IPs in dotted decimal format (separate "
                 "multiple using commas)", ntp_servers_default)
 
             ntp_server_list = self._format_ip_list(ntp_server_list)
@@ -1906,7 +1887,7 @@ class Wizard(object):
     def _validate_ip_list(self, ip_list):
         for ip in ip_list:
             if self._validate_ipaddr(ip) is None:
-                self._print("\n%s is not a valid IP address\n" % ip)
+                print("\n%s is not a valid IP address\n" % ip)
                 return None
 
         return ip_list
@@ -1914,7 +1895,7 @@ class Wizard(object):
     def _validate_hostname_list(self, hostname_list):
         for hostname in hostname_list:
             if self._validate_hostname(hostname) is None:
-                self._print("\n%s is not a valid hostname\n" % hostname)
+                print("\n%s is not a valid hostname\n" % hostname)
                 return None
 
         return hostname_list
@@ -1936,7 +1917,7 @@ class Wizard(object):
         deployment["nuage_unzipped_files_dir"] = unzip_dir
 
     def _setup_bridges(self, deployment, data):
-        self._print(self._get_field(data, "bridge_setup_msg"))
+        print(self._get_field(data, "bridge_setup_msg"))
 
         if "mgmt_bridge" in deployment:
             mgmt_bridge_default = deployment["mgmt_bridge"]
@@ -1978,8 +1959,8 @@ class Wizard(object):
         if "target_server_type" in self.state:
             return
 
-        self._print("\nPlease choose a target server (hypervisor) type for "
-                    "your deployment.\n")
+        print("\nPlease choose a target server (hypervisor) type for "
+              "your deployment.\n")
 
         server_type = self._input("Target server type", 0,
                                   TARGET_SERVER_TYPE_LABELS)
@@ -2010,7 +1991,7 @@ class Wizard(object):
         except ImportError:
             self._record_problem(
                 "deployment_create", "Could not create a deployment file")
-            self._print(
+            print(
                 "Cannot write deployment files because libraries are missing."
                 "  Please make sure setup.sh has been run.")
             return
@@ -2025,14 +2006,14 @@ class Wizard(object):
             os.path.join("schemas", schema + ".json"))
         template = jinja2.Template(example_lines)
         rendered = template.render(**deployment)
-        with open(output_file, 'w') as file:
-            file.write(rendered.encode("utf-8"))
+        with open(output_file, 'w', encoding='utf-8') as file:
+            file.write(rendered)
 
         self._unrecord_problem("deployment_create")
-        self._print("\nWrote deployment file: " + output_file)
+        print("\nWrote deployment file: " + output_file)
 
     def _setup_upgrade(self, deployment, data):
-        self._print(self._get_field(data, "upgrade_msg"))
+        print(self._get_field(data, "upgrade_msg"))
 
         if "upgrade_from_version" in deployment:
             upgrade_from_version_default = deployment["upgrade_from_version"]
@@ -2108,7 +2089,7 @@ class Wizard(object):
         component["hostname"] = hostname
         return hostname
 
-    def _setup_ip_addresses(self, deployment, i, hostname, is_vsc):
+    def _setup_ip_addresses(self, deployment, i, hostname, is_vsc, is_nuh):
         component = deployment[i]
 
         mgmt_ip = self._setup_mgmt_address(component, hostname)
@@ -2133,8 +2114,46 @@ class Wizard(object):
             system_ip = self._input("System IP address for routing", default,
                                     datatype="ipaddr")
             component["system_ip"] = system_ip
+        if is_nuh:
+
+            default = self._get_value(component, "internal_ip")
+            internal_ip = self._input("IP address on Internal interface",
+                                      default, datatype="ipaddr")
+            component["internal_ip"] = internal_ip
+
+            default = "24"
+            if "internal_ip_prefix" in component:
+                default = str(component["internal_ip_prefix"])
+
+            internal_ip_prefix = self._input("Internal IP address prefix length",
+                                             default, datatype="int")
+            component["internal_ip_prefix"] = internal_ip_prefix
+
+            if "internal_gateway" in component and component["internal_gateway"] != "":
+                default = self._get_value(component, "internal_gateway")
+            else:
+                default = None
+            internal_gateway = self._input("Gateway for Internal interface",
+                                           default, datatype="ipaddr")
+            component["internal_gateway"] = internal_gateway
+
+            if "external_interface_list" in component and component["external_interface_list"] != []:
+                default = self._get_value(component, "external_interface_list")
+            else:
+                default = None
+            external_interface_list = None
+            while external_interface_list is None:
+                external_interface_list = self._input(
+                    "Enter External interface names in string format (separate "
+                    "multiple using commas)", default)
+                external_interface_list = self._format_interface_list(external_interface_list)
+
+            component["external_interface_list"] = external_interface_list
 
         self._setup_target_server(component)
+
+    def _format_interface_list(self, inter_str):
+        return [x.strip() for x in inter_str.split(",")]
 
     def _setup_mgmt_address(self, component, hostname):
 
@@ -2208,22 +2227,22 @@ class Wizard(object):
                 "getent hosts %s" % hostname)
             if rc == 0:
                 self._unrecord_problem("dns_resolve")
-                self._print("")
+                print("")
                 return output_lines[0].split(" ")[0]
             else:
                 self._record_problem(
                     "dns_resolve", "Could not resolve hostnames with DNS")
 
-                self._print(
+                print(
                     u"\nCould not resolve %s to an IP address, this is "
                     u"required for MetroAE to operate.  Is the hostname "
                     u"defined in DNS?" % hostname)
         except Exception as e:
             self._record_problem(
                 "dns_resolve", "Error while resolving hostnames with DNS")
-            self._print("\nAn error occurred while resolving hostname: " +
-                        str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while resolving hostname: " +
+                  str(e))
+            print("Please contact: " + METROAE_CONTACT)
 
         return None
 
@@ -2457,8 +2476,57 @@ class Wizard(object):
                               default, datatype="ipaddr")
         deployment["second_controller_address"] = address
 
+    def _setup_external_interfaces(self, deployment, data, i):
+        component = deployment[i]
+        if "external_ip" in component and component["external_ip"] != "":
+            default = component["external_ip"]
+        else:
+            default = None
+        external_ip = self._input("IP address of the external interface",
+                                  default, datatype="ipaddr")
+        component["external_ip"] = external_ip
+
+        if "external_ip_prefix" in component and component["external_ip_prefix"] != "":
+            default = component["external_ip_prefix"]
+        else:
+            default = None
+        external_ip_prefix = self._input("IP prefix length for the external network",
+                                         default, datatype="int")
+        component["external_ip_prefix"] = external_ip_prefix
+
+        if "external_gateway" in component and component["external_gateway"] != "":
+            default = component["external_gateway"]
+        else:
+            default = None
+        external_gateway = self._input("IP address of the external interface gateway",
+                                       default, datatype="ipaddr")
+        component["external_gateway"] = external_gateway
+
+        if "vlan" in component and component["vlan"] != "":
+            default = component["vlan"]
+        else:
+            default = None
+        vlan = self._input("VLAN ID of the external interface", default,
+                           datatype="int")
+        component["vlan"] = vlan
+
+        if "external_bridge" in component and component["external_bridge"] != "":
+            default = component["external_bridge"]
+        else:
+            default = None
+        external_bridge = self._input("Network bridge used for external interface", default)
+        component["external_bridge"] = external_bridge
+
+        default = None
+        name = self._input("Name of the external interface", default)
+        component["name"] = name
+
+        default = None
+        external_fqdn = self._input("FQDN for the external interface", default)
+        component["external_fqdn"] = external_fqdn
+
     def _setup_ssh(self, username, hostname):
-        self._print("Adding SSH keys for %s@%s, may ask for password" % (
+        print("Adding SSH keys for %s@%s, may ask for password" % (
             username, hostname))
         try:
             options = ""
@@ -2470,29 +2538,29 @@ class Wizard(object):
                 "ssh-copy-id %s%s@%s" % (options, username, hostname))
             if rc == 0:
                 self._unrecord_problem("ssh_keys")
-                self._print("\nSuccessfully setup SSH on host %s" % hostname)
+                print("\nSuccessfully setup SSH on host %s" % hostname)
                 return True
             else:
                 self._record_problem(
                     "ssh_keys", "Could not setup password-less SSH")
-                self._print("\n".join(output_lines))
-                self._print(
+                print("\n".join(output_lines))
+                print(
                     u"\nCould not add SSH keys for %s@%s, this is required"
                     u" for MetroAE to operate." % (username, hostname))
         except Exception as e:
             self._record_problem(
                 "ssh_keys", "Error while setting up password-less SSH")
-            self._print("\nAn error occurred while setting up SSH: " +
-                        str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while setting up SSH: " +
+                  str(e))
+            print("Please contact: " + METROAE_CONTACT)
 
         return False
 
     def _setup_ssh_key(self):
         rc, output_lines = self._run_shell("stat ~/.ssh/id_rsa.pub")
         if rc != 0:
-            self._print("\nCould not find your SSH public key "
-                        "~/.ssh/id_rsa.pub\n")
+            print("\nCould not find your SSH public key "
+                  "~/.ssh/id_rsa.pub\n")
 
             choice = self._input("Do you wish to generate a new SSH keypair?",
                                  0, ["(Y)es", "(n)o"])
@@ -2502,13 +2570,13 @@ class Wizard(object):
                                                    '-f ~/.ssh/id_rsa')
 
                 if rc == 0:
-                    self._print("\nSuccessfully generated an SSH keypair")
+                    print("\nSuccessfully generated an SSH keypair")
                     return True
                 else:
                     self._record_problem(
                         "ssh_keys", "Could not generate SSH keypair")
-                    self._print("\n".join(output_lines))
-                    self._print(
+                    print("\n".join(output_lines))
+                    print(
                         "\nCould not generate an SSH keypair, this is "
                         "required for MetroAE to operate.")
                     return False
@@ -2522,22 +2590,22 @@ class Wizard(object):
                     username, hostname))
             if rc == 0:
                 self._unrecord_problem("ssh_access")
-                self._print("\nSuccessfully connected via SSH to host %s" %
-                            hostname)
+                print("\nSuccessfully connected via SSH to host %s" %
+                      hostname)
                 return True
             else:
                 self._record_problem(
                     "ssh_access", "Could not connect via password-less SSH")
-                self._print("\n".join(output_lines))
-                self._print(
+                print("\n".join(output_lines))
+                print(
                     u"\nCould not connect via SSH to %s@%s, this is required"
                     u" for MetroAE to operate." % (username, hostname))
         except Exception as e:
             self._record_problem(
                 "ssh_access", "Error while connecting to host via SSH")
-            self._print("\nAn error occurred while connecting to host via "
-                        " SSH: " + str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while connecting to host via "
+                  " SSH: " + str(e))
+            print("Please contact: " + METROAE_CONTACT)
 
         return False
 
@@ -2549,22 +2617,22 @@ class Wizard(object):
                     username, hostname, bridge))
             if rc == 0:
                 self._unrecord_problem("bridge")
-                self._print("\nSuccessfully verified bridge %s on host %s" % (
-                            bridge, hostname))
+                print("\nSuccessfully verified bridge %s on host %s" % (
+                      bridge, hostname))
                 return True
             else:
                 self._record_problem(
                     "bridge", "Bridge not present on target server host")
-                self._print("\n".join(output_lines))
-                self._print(
+                print("\n".join(output_lines))
+                print(
                     u"\nBridge %s not present on %s, this is required"
                     u" for components to communicate." % (bridge, hostname))
         except Exception as e:
             self._record_problem(
                 "bridge", "Error while verifying bridge interfaces")
-            self._print("\nAn error occurred while verifying bridge interface "
-                        " via SSH: " + str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
+            print("\nAn error occurred while verifying bridge interface "
+                  " via SSH: " + str(e))
+            print("Please contact: " + METROAE_CONTACT)
 
         return False
 
@@ -2575,8 +2643,8 @@ def main():
         wizard()
     except Exception:
         traceback.print_exc()
-        print "\nThere was an unexpected error running the wizard"
-        print "Please contact: " + METROAE_CONTACT
+        print("\nThere was an unexpected error running the wizard")
+        print("Please contact: " + METROAE_CONTACT)
         exit(1)
 
 

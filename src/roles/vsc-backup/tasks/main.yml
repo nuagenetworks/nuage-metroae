@@ -10,6 +10,8 @@
   no_log: True
   ignore_errors: True
 
+- meta: reset_connection
+
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
@@ -20,6 +22,8 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- meta: reset_connection
+
 - name: Get output of 'show bof'
   sros_command:
     commands:
@@ -28,15 +32,9 @@
   delegate_to: localhost
   register: bof_config
 
-- name: Print 'show bof' when verbosity >= 1
-  debug: var=bof_config.stdout[0] verbosity=1
-
 - name: Create local variable with bof config in json
   set_fact:
     bof_json: "{{ bof_config.stdout[0]|show_bof_to_json }}"
-
-- name: Print bof config in json  when verbosity >= 1
-  debug: var=bof_json
 
 - name: Get VSD deployment mode
   include_role:
@@ -45,10 +43,10 @@
   vars:
     vsd_hostname: "{{ vsd_fqdn }}"
 
-- name: Print vsd deployment mode when verbosity >= 1
-  debug: var="vsd_sa_or_ha"
-
 - block:
+
+  - meta: reset_connection
+
   - name: Get output of 'show system connections port 5222'
     sros_command:
       commands:
@@ -57,16 +55,13 @@
     delegate_to: localhost
     register: vsc_sys_conn
 
-  - name: Print 'show system connections port 5222' when verbosity >= 1
-    debug: var=vsc_sys_conn verbosity=1
-
   - name: Create local variable with vsc system connection in json
     set_fact:
       vsc_sys_conn_json: "{{ vsc_sys_conn.stdout[0]|vsc_system_connections_to_json }}"
 
-  - name: Print vsc system connection in json  when verbosity >= 1
-    debug: var=vsc_sys_conn_json verbosity=1
   when: vsd_sa_or_ha is match('ha')
+
+- meta: reset_connection
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
   sros_command:
@@ -79,8 +74,7 @@
   retries: 10
   delay: 30
 
-- name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
-  debug: var=xmpp_detail verbosity=1
+- meta: reset_connection
 
 - name: Save existing configuration on VSC
   sros_command:
@@ -90,11 +84,5 @@
     provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: conf_save
-
-- name: Print 'bof save' when verbosity >= 1
-  debug: var=conf_save.stdout[0] verbosity=1
-
-- name: Print 'admin save' when verbosity >= 1
-  debug: var=conf_save.stdout[1] verbosity=1
 
 - import_tasks: backup_vsc.yml

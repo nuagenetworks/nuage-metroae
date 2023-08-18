@@ -8,7 +8,7 @@
   - include_role:
       name: common
       tasks_from: copy-qcow2
-    when: not skip_copy_images
+    when: not skip_copy_images | default(False)
 
   - block:
     - name: Check to make sure there is an existing qcow image
@@ -29,6 +29,20 @@
       -a {{ vsr_target_qcow2_file_path }} \
       -m {{ vsr_partition }} \
       copy-in {{ images_path }}/{{ vmname }}/license.txt /
+
+  - name: Setup VSR temporary configuration files
+    template:
+      src: bof.cfg.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/bof.cfg"
+
+  - name: Copy temporary configuration files to the VSR image
+    command: >-
+      guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
+      -m {{ vsr_partition }} copy-in {{ images_path }}/{{ vm_name }}/bof.cfg /
+
+  - name: Remove temporary configuration files
+    file: path={{ images_path }}/{{ vm_name }}/bof.cfg state=absent
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"

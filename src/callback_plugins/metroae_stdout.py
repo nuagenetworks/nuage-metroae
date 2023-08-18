@@ -44,7 +44,7 @@ def my_represent_scalar(self, tag, value, style=None):
     if style is None:
         if should_use_block(value):
             style = '|'
-            # we care more about readable than accuracy, so...
+            # we care more about readability than accuracy, so...
             # ...no trailing space
             value = value.rstrip()
             # ...and non-printable characters

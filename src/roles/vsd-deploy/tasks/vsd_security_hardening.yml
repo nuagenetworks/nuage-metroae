@@ -24,6 +24,18 @@
 - block:
 
   - block:
+    - name: Create password
+      command: openssl passwd -1 {{ vsd_custom_password }}
+      register: openssl_pwd
+
+    - name: Change user password
+      command: usermod -p {{ openssl_pwd.stdout }} {{ vsd_default_username }}
+
+    when:
+      - vsd_custom_username is not defined
+      - vsd_custom_password is defined
+
+  - block:
 
     - name: Create a SSH pass
       command: openssl passwd -1 {{ vsd_custom_password }}
@@ -51,6 +63,7 @@
         path: /etc/ssh/sshd_config
         regexp: '#PermitRootLogin yes'
         line: 'PermitRootLogin no'
+      when: not keep_root_access
 
     - name: Create .ssh directory for vsd custom user
       file:
@@ -71,9 +84,14 @@
           backup: no
           dest: /tmp/authorized_keys_temp
 
+      - name: Add proxy setup
+        set_fact:
+            proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
+        when: ssh_proxy_configuration is defined
+
       - name: Copy authorized file to vsd custom user home directory
         shell: >-
-            sshpass -p{{ vsd_custom_password }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/authorized_keys_temp
+            sshpass -p'{{ vsd_custom_password }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default('') }} /tmp/authorized_keys_temp
             {{ vsd_custom_username }}@{{ mgmt_ip }}:/home/{{ vsd_custom_username }}/.ssh/authorized_keys
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
@@ -142,6 +160,12 @@
       - "/etc/pam.d/password-auth"
       - "/etc/pam.d/system-auth"
 
+  - name: Grep for TLS version 1
+    shell: grep 'protocol="TLSv1"' /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+    register: grep_output
+    changed_when: false
+    ignore_errors: true
+
   - block:
 
     - name: Enable TLSv1.2 for verify-client false
@@ -168,27 +192,44 @@
         timeout_seconds: 1200
         test_interval_seconds: 30
 
-    when: tls_version is defined and tls_version == "1.2"
+    when:
+      - tls_version is defined
+      - tls_version == "1.2"
+      - grep_output.rc == 0
 
   - block:
-    - name: Grep for new access logging pattern
-      shell: grep "access-log pattern" /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
-      register: grep_output
-      ignore_errors: true
 
-    - name: Advanced API access Logging
-      lineinfile:
+    - name: Set Advanced API access Logging if matching for 5.*
+      replace:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*<access-log pattern=\"%a %t %H %p %r %s %D.*"
-        line: '<access-log pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" prefix="access.log" rotate="false">'       # noqa 204
-      when: grep_output.rc == 0
+        replace: '<access-log pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" prefix="access.log" rotate="false">'       # noqa 204
+      register: api_logging_result_v5
 
-    - name: Advanced API access Logging
-      lineinfile:
+    - debug: var=api_logging_result_v5.changed
+
+    - name: Set Advanced API access Logging if matching for 6.*
+      replace:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
-        regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*"
-        line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
-      when: grep_output.rc != 0
+        regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*false\">"
+        replace: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" rotate="false">'
+      register: api_logging_result_v6
+
+    - debug: var=api_logging_result_v6.changed
+
+    - name: Set Advanced API access Logging if matching for 20.*
+      replace:
+        path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+        regexp: ".*<access-log prefix=\"access.\" directory=\"web.access\".*/>"
+        replace: '<access-log prefix="access." directory="web.access" relative-to="jboss.server.log.dir" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{o,X-Nuage-Request-ID} %{r,com.alu.cna.cloudmgmt.api.querycount}" rotate="false" />'
+      register: api_logging_result_v20
+
+    - debug: var=api_logging_result_v20.changed
+
+    - name: Assert that line replacement was successful
+      assert:
+        that: "api_logging_result_v5.changed == true or api_logging_result_v6.changed == true or api_logging_result_v20.changed == true"
+        msg: "Advanced API access logging was not set"
 
     when: advanced_api_access_logging is defined
 
@@ -201,19 +242,37 @@
   command: echo $JAVA_HOME
   register: java_home
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  changed_when: False
 
 - block:
 
-  - name: Copy Root CA to VSD
-    copy:
-      src: "{{ ca_certificate_path }}"
-      dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
-      owner: ejabberd
-      group: hadoopusers
-      mode: 0640
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+
+  - block:
+
+    - name: Copy Root CA to VSD for versions <= 6
+      copy:
+        src: "{{ ca_certificate_path }}"
+        dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: vsd_major_version|int <= 6
+
+    - name: Copy Root CA to VSD for versions > 6
+      copy:
+        src: "{{ ca_certificate_path }}"
+        dest: "/opt/vsd/ejbca/p12/rootca.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: vsd_major_version|int > 6
+
     when: ca_certificate_path is defined
 
-  - name: Copy and Intermediate Cert file to VSD
+  - name: Copy Intermediate Cert file to VSD
     copy:
       src: "{{ intermediate_certificate_path }}"
       dest: "/opt/vsd/ejbca/p12/intermediate.cert.pem"
@@ -231,45 +290,98 @@
       mode: 0640
     when: certificate_path is defined
 
-  - name: Copy VSD certificate to ejabberd
-    copy:
-      src: "{{ certificate_path }}"
-      dest: "/opt/ejabberd/conf/server.pem"
-      owner: ejabberd
-      group: hadoopusers
-      mode: 0640
-    when: certificate_path is defined
+  - block:
 
-  - name: Copy Root certificate to ejabberd
-    copy:
-      src: "{{ ca_certificate_path }}"
-      dest: "/opt/ejabberd/conf/rootca.pem"
-      owner: ejabberd
-      group: hadoopusers
-      mode: 0640
-    when: ca_certificate_path is defined
+    - name: Copy VSD certificate to ejabberd for versions <= 6
+      copy:
+        src: "{{ certificate_path }}"
+        dest: "/opt/ejabberd/conf/server.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: certificate_path is defined
 
-  - name: Import Intermediate Cert Pem file
-    command: >-
-      {{ java_home.stdout }}/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem
-      -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt
+    - name: Copy Root certificate to ejabberd for versions <= 6
+      copy:
+        src: "{{ ca_certificate_path }}"
+        dest: "/opt/ejabberd/conf/rootca.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: ca_certificate_path is defined
+
+    - block:
+
+      - name: Import Intermediate Cert Pem file for versions <= 6
+        command: >-
+          {{ java_home.stdout }}/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem
+          -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt
+        when: intermediate_certificate_path is defined
+
+      - name: Import Root CA Pem file for versions <= 6
+        command: >-
+          {{ java_home.stdout }}/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem
+          -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt
+        when: ca_certificate_path is defined
+
+      when: nuage_upgrade is not defined or not nuage_upgrade
+
+    when: vsd_major_version|int <= 6
+
+  - block:
+
+    - name: Copy Intermediate Cert to VSD for versions > 6
+      copy:
+        src: "{{ intermediate_certificate_path }}"
+        dest: "/etc/pki/ca-trust/source/anchors/"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: intermediate_certificate_path is defined
+
+    - block:
+
+      - name: Copy Root Cert to VSD for versions > 6
+        copy:
+          src: "{{ ca_certificate_path }}"
+          dest: "/etc/pki/ca-trust/source/anchors/"
+          owner: ejabberd
+          group: hadoopusers
+          mode: 0640
+
+      - name: Generate CA DER certificate
+        command: "openssl x509 -outform der -in /etc/pki/ca-trust/source/anchors/{{ ca_certificate_path | basename }} -out /etc/pki/ca-trust/source/anchors/ca.der"
+
+      when: ca_certificate_path is defined
+
+    - name: Import Certificates for versions > 6
+      command: /usr/bin/update-ca-trust
+
     when:
-      - intermediate_certificate_path is defined
+      - intermediate_certificate_path is defined or ca_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
-
-  - name: Import Root CA Pem file
-    command: >-
-      {{ java_home.stdout }}/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem
-      -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt
-    when:
-      - ca_certificate_path is defined
-      - nuage_upgrade is not defined or not nuage_upgrade
+      - vsd_major_version|int > 6
 
   - name: Stop vsd-core
     command: monit -g vsd-core stop
 
   - name: Stop ejabberd
     command: monit stop ejabberd
+
+  - name: Wait for shutdown of core processes on VSD
+    vsd_monit:
+      group: vsd-core
+    register: proc_list
+    until: '"running" not in proc_list["state"] | to_json and "pending" not in proc_list["state"] | to_json'
+    retries: 10
+    delay: 5
+
+  - name: Wait for shutdown of ejabberd
+    shell: monit summary ejabberd | grep "Not monitored"        # noqa 306
+    register: grep_result
+    until: grep_result.rc == 0
+    retries: 10
+    delay: 5
 
   - name: Start ejabberd
     command: monit start ejabberd
@@ -292,9 +404,14 @@
   - name: Start vsd-core
     command: monit -g vsd-core start
 
-  - name: Wait for vsd-core to start
+  - name: Get monit summary for core processes on VSD
+    vsd_monit:
+      group: vsd-core
+    register: proc_list
+
+  - name: Wait for VSD core processes to become running
     monit_waitfor_service:
-      name: vsd-core-status
+      name: "{{ proc_list['state'].keys() | list }}"
       timeout_seconds: 1200
       test_interval_seconds: 30
 
@@ -308,14 +425,15 @@
       msg: "Openssl failed to connect with {{ vsd_fqdn }}. Please make sure the certificates are valid"
 
   - block:
-    - name: Check connected user on ejabberd
+
+    - name: Check connected users on ejabberd
       shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
       register: ejabberdctl_output
       until: ejabberdctl_output.stdout | int >= 3
-      retries: 10
+      retries: 20
       delay: 15
 
-    - name: Assert there are more than 3 connected user for standalone
+    - name: Assert that there are at least 3 connected users for standalone
       assert:
         that: "ejabberdctl_output.stdout | int >= 3"
         msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"
@@ -323,14 +441,15 @@
     when: vsd_sa_or_ha is match ('sa')
 
   - block:
-    - name: Check connected user on ejabberd
+
+    - name: Check connected users on ejabberd
       shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
       register: ejabberdctl_output
       until: ejabberdctl_output.stdout | int >= 9
-      retries: 10
+      retries: 20
       delay: 15
 
-    - name: Assert there are more than 9 connected user for clustered
+    - name: Assert that there are at least 9 connected users for clustered
       assert:
         that: "ejabberdctl_output.stdout | int >= 9"
         msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"

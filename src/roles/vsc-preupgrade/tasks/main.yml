@@ -5,6 +5,8 @@
   vars:
     vsd_hostname: "{{ vsd_fqdn }}"
 
+- meta: reset_connection
+
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
@@ -14,6 +16,8 @@
     ssh_password: "{{ vsc_creds.password }}"
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
+
+- meta: reset_connection
 
 - name: Get output of 'show version'
   sros_command:
@@ -33,6 +37,8 @@
     set_fact:
       mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
 
+  - meta: reset_connection
+
   - name: Configure PBR backward compatibility on first VSC node running 3.2 version
     sros_config:
       lines:
@@ -46,6 +52,8 @@
   - name: Set mgmt_ip to second vsc node
     set_fact:
       mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
+
+  - meta: reset_connection
 
   - name: Configure PBR backward compatibility on second VSC node running 3.2 version
     sros_config:
@@ -62,6 +70,8 @@
     - inventory_hostname in groups['vscs'][0]
     - groups['vscs'][1] is defined
 
+- meta: reset_connection
+
 - name: Get output of 'show bof'
   sros_command:
     commands:
@@ -76,6 +86,8 @@
 
 - block:
 
+  - meta: reset_connection
+
   - name: Get output of 'show system connections port 5222'
     sros_command:
       commands:
@@ -87,6 +99,8 @@
   - name: Create local variable with VSC system connetion in json
     set_fact:
       vsc_sys_conn_json: "{{ vsc_sys_conn.stdout[0]|vsc_system_connections_to_json }}"
+
+  - meta: reset_connection
 
   - name: check xmpp connectivity for VSC
     sros_command:
@@ -101,6 +115,8 @@
     register: xmpp_status
 
   when: vsd_sa_or_ha is match('ha')
+
+- meta: reset_connection
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
   sros_command:
@@ -130,6 +146,8 @@
     that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
     msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected.Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'." }       # noqa 204
   when: vsd_sa_or_ha is match('ha')
+
+- meta: reset_connection
 
 - name: Save VSC configs
   sros_command:

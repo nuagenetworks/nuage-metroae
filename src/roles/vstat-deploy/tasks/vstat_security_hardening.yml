@@ -1,0 +1,116 @@
+- name: Clean known_hosts of VSTATs (ignoring errors)
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
+- name: Clean known_hosts of VSTATs (ignoring errors)
+  known_hosts:
+    name: "{{ inventory_hostname }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
+- name: Check if custom user is already exists and is connected via ssh
+  command: ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ vstat_custom_username }}@{{ inventory_hostname }} exit 0
+  register: ssh_custom_user
+  delegate_to: localhost
+  ignore_errors: yes
+  when: vstat_custom_username is defined
+
+- block:
+
+  - block:
+
+    - name: Create a SSH pass
+      command: openssl passwd -1 {{ vstat_custom_password }}
+      register: openssl_pwd
+
+    - name: Check if user exists
+      command: id -u {{ vstat_custom_username }}
+      ignore_errors: yes
+      register: user_exists
+
+    - name: Create the user if not present
+      command: useradd -p {{ openssl_pwd.stdout }} {{ vstat_custom_username }}
+      when: "'no such user' in user_exists.stderr"
+
+    - name: Add user to sudoers list
+      command: usermod -aG wheel {{ vstat_custom_username }}
+
+    - name: Update sshd config file
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '#PermitRootLogin yes'
+        line: 'PermitRootLogin no'
+      when: not keep_root_access
+
+    - name: Create .ssh directory for vstat custom user
+      file:
+        path: '/home/{{ vstat_custom_username }}/.ssh/'
+        state: directory
+        owner: "{{ vstat_custom_username }}"
+        group: "{{ vstat_custom_username }}"
+
+    - block:
+
+      - name: Get the public key for the curren user
+        command: cat "{{ user_ssh_pub_key }}"
+        register: current_user_ssh_key
+
+      - name: Create a temporary copy of the autorized_keys file
+        template:
+          src: "{{ role_path }}/../common/templates/authorized_keys.j2"
+          backup: no
+          dest: /tmp/authorized_keys_temp
+
+      - name: Add proxy setup
+        set_fact:
+          proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
+        when: ssh_proxy_configuration is defined
+
+      - name: Copy authorized file to vstat custom user home directory
+        shell: >-
+            sshpass -p'{{vstat_custom_password }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default("") }}
+            /tmp/authorized_keys_temp {{ vstat_custom_username }}@{{ mgmt_ip }}:/home/{{ vstat_custom_username }}/.ssh/authorized_keys
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
+      - name: Remove temporary copy of authorized_key file
+        file: path=tmp/authorized_keys_temp state=absent
+
+      delegate_to: localhost
+
+    - name: Set permission on the authorized file to 644
+      shell: 'chmod 644 /home/{{ vstat_custom_username }}/.ssh/authorized_keys'
+      remote_user: "{{ vstat_custom_username }}"
+
+    - name: Restart ssh server
+      shell: /bin/systemctl restart sshd.service
+
+    - name: Set vstat user to custom user
+      set_fact:
+        vstat_username: "{{ vstat_custom_username }}"
+
+    when:
+      - vstat_custom_username is defined
+      - vstat_custom_password is defined
+      - ssh_custom_user.rc != 0
+
+  - block:
+  
+    - name: Create a custom SSH pass for root user
+      command: openssl passwd -1 "{{ vstat_custom_password }}"
+      register: changed_root_pwd
+
+    - name: Update Root user's Password
+      user:
+        name: "{{ vstat_default_username }}"
+        update_password: always
+        password: "{{ changed_root_pwd.stdout }}"
+
+    when: vstat_custom_password is defined and vstat_custom_username is not defined
+
+  remote_user: "{{ vstat_default_username }}"

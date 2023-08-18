@@ -22,30 +22,73 @@
 
   - block:
 
+    - name: Check that image files are not missing
+      set_fact:
+        is_file_missing: "{{ image_path | default ('MISSING') == 'MISSING' or image_file_name | default ('MISSING') == 'MISSING' }}"
+
+    - name: Delete the md5 files
+      file:
+        path: "{{ inventory_dir }}/deployment.md5.yml"
+        state: absent
+      when: is_file_missing
+      delegate_to: localhost
+
     - name: Check that image files were found
       assert:
-        that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
+        that: not is_file_missing
         msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
-      when: target_server_type is match("kvm") or target_server_type is match("vcenter")
 
-    when: component_type | default("NONE") != 'vrs'
+    when:
+    - component_type | default("NONE") != 'vrs'
+    - target_server_type is match("kvm") or target_server_type is match("vcenter")
+    - not skip_copy_images | default(False)
 
   - block:
 
+    - name: Check that image files are not missing
+      set_fact:
+        is_vrs_package_missing: "{{ vrs_package_path | default ('MISSING') == 'MISSING' }}"
+        is_dkms_package_missing: "{{ dkms_install and dkms_package_path  | default ('MISSING') == 'MISSING'}}"
+
+    - name: Delete the md5 files
+      file:
+        path: "{{ inventory_dir }}/deployment.md5.yml"
+        state: absent
+      when: is_vrs_package_missing or is_dkms_package_missing
+      delegate_to: localhost
+
     - name: Check that VRS package files were found
       assert:
-        that: "vrs_package_path | default('MISSING') != 'MISSING'"
+        that: not is_vrs_package_missing
         msg: "Missing VRS package files under the unzipped file directory, please unzip them."
 
     - name: Check that DKMS files were found
       assert:
-        that: "dkms_package_path | default('MISSING') != 'MISSING'"
+        that: not is_dkms_package_missing
         msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it."
-      when: dkms_install
 
     when: component_type | default("NONE") == 'vrs'
 
   when: not vsd_inplace_upgrade | default(false)
+
+- block:
+  - name: Check for portal files missing
+    set_fact:
+      is_portal_path_missing: "{{ portal_path | default('MISSING') == 'MISSING' }}"
+      is_portal_file_missing: "{{ portal_file_name | default('MISSING') == 'MISSING' }}"
+
+  - name: Delete the md5 files
+    file:
+      path: "{{ inventory_dir }}/deployment.md5.yml"
+      state: absent
+    when: is_portal_file_missing or is_portal_path_missing
+    delegate_to: localhost
+
+  - name: Check the image path for portal container
+    assert:
+      that: not is_portal_file_missing and not is_portal_path_missing
+      msg: "Missing SDWAN portal container tar or CentOS image for portal under the unzipped directory, Please Copy it"
+  when: component_type | default("NONE") == 'portal'
 
 - block:
 
@@ -65,7 +108,7 @@
 - block:
 
   - name: Get info on datastore
-    connection: local
+    delegate_to: localhost
     vmware_datastore_info:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -123,3 +166,37 @@
     that: vrs_package_path != "MISSING"
     msg: "vrs_package_path not defined. Please define it and try again."
   when: vrss is defined and vrss|length > 0
+
+- name: Get the public key for the current user
+  command: cat "{{ user_ssh_pub_key }}"
+  delegate_to: localhost
+  register: current_user_ssh_key
+  changed_when: False
+  ignore_errors: True
+
+- name: Check if ssh key file was found
+  fail:
+    msg: "We couldn't find the user's SSH key file {{ user_ssh_pub_key }}. Is user_ssh_pub_key defined correctly in common.yml?"
+  when: target_server_type | default('NONE') is not match ("openstack") and current_user_ssh_key.rc != 0
+
+- name: Check if vsd_license_file is present
+  include_role:
+    name: common
+    tasks_from: check-local-file-present
+  vars:
+    file_path: "{{ vsd_license_file }}"
+    success_message: "Found VSD license file"
+    fail_message: "Could not find VSD license file"
+    continue_on_error: "{{ vsd_continue_on_license_failure }}"
+  when: vsd_license_file is defined
+
+- name: Check if vsd_cluster_license_file is present
+  include_role:
+    name: common
+    tasks_from: check-local-file-present
+  vars:
+    file_path: "{{ vsd_cluster_license_file }}"
+    success_message: "Found VSD cluster license file"
+    fail_message: "Could not find VSD cluster license file"
+    continue_on_error: "{{ vsd_continue_on_license_failure }}"
+  when: vsd_cluster_license_file is defined

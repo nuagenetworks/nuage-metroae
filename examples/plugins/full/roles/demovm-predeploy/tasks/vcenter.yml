@@ -1,0 +1,103 @@
+---
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
+
+- include_role:
+    name: check-node-running
+
+- name: Display if skipping DEMOVM predeploy
+  debug:
+    msg:
+      - "********************************************************"
+      - "Skipping DEMOVM predeploy because it is already present"
+      - "********************************************************"
+  when: demovm_present
+
+- block:
+
+  - name: Configure vCenter path and ovftool command
+    include_role:
+      name: common
+      tasks_from: configure-ovftool
+    vars:
+      management_network: "Management"
+
+  - name: Deploy DEMOVM image on vCenter
+    include_role:
+      name: common
+      tasks_from: vcenter-deploy-image
+
+  - name: Waiting until VMware tools becomes available
+    connection: local
+    vmware_guest_tools_wait:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      validate_certs: no
+    register: demovm_vm_facts
+
+  - debug: var=demovm_vm_facts verbosity=1
+
+  - name: Disable cloud-init on DEMOVM
+    include_role:
+      name: common
+      tasks_from: vcenter-disable-cloud-init
+    vars:
+      vm_username: "{{ demovm_default_username }}"
+      vm_password: "{{ demovm_default_password }}"
+
+  - name: Setup networking on DEMOVM
+    include_role:
+      name: common
+      tasks_from: vcenter-setup-networking
+    vars:
+      vm_username: "{{ demovm_default_username }}"
+      vm_password: "{{ demovm_default_password }}"
+      ifcfg_eth0_contents: "{{ lookup('template', 'ifcfg-eth0.j2') }}"
+      skip_hostname: True
+
+  - name: Get the public key for the current user
+    local_action: command cat "{{ user_ssh_pub_key }}"
+    register: current_user_ssh_key
+
+  - name: Inject SSH keys onto DEMOVM
+    include_role:
+      name: common
+      tasks_from: vcenter-inject-ssh-keys
+    vars:
+      vm_username: "{{ demovm_default_username }}"
+      vm_password: "{{ demovm_default_password }}"
+
+  - name: Disable NetworkManager
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ demovm_default_username }}"
+      vm_password: "{{ demovm_default_password }}"
+      vm_shell: "/bin/systemctl"
+      vm_shell_args: " disable NetworkManager"
+
+  - name: Reboot DEMOVM VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ demovm_default_username }}"
+      vm_password: "{{ demovm_default_password }}"
+      vm_shell: "/usr/sbin/reboot"
+
+  when: not demovm_present

@@ -1,31 +1,38 @@
 ---
 - name: Finding VM folder (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_find:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
     name: "{{ vm_name }}"
     validate_certs: no
   register: vstat_vm_folder
   ignore_errors: yes
 
+- name: Check output message for unexpected errors
+  assert:
+    that: vstat_vm_folder.msg is search('Unable to find folders for virtual machine')
+    fail_msg: "{{ vstat_vm_folder.msg }}"
+  when: vstat_vm_folder.msg is defined
+
+- name: Check for exception in VSTAT VM Folder
+  fail: msg="Exception found {{ vstat_vm_folder.exception }}"
+  when: vstat_vm_folder.exception is defined
+
 - name: Gathering info on VM (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_info:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
     datacenter: "{{ vcenter.datacenter }}"
-    folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
+    folder: "{{ vstat_vm_folder['folders'][0] }}"
     name: "{{ vm_name }}"
     validate_certs: no
   register: vstat_vm_facts
   ignore_errors: yes
   when: vstat_vm_folder is succeeded
-
-- debug: var=vstat_vm_facts verbosity=1
 
 - name: Check for exceptions in VSTAT Vm facts
   fail: msg="Exception found {{ vstat_vm_facts.exception }}"
@@ -42,18 +49,14 @@
     delegate_to: localhost
     register: vm_info
 
-  - debug: var=vm_info
-
   - name: Set uuid fact
     set_fact:
       uuid: "{{ item.uuid }}"
     when: item.guest_name == vm_name
     with_items: "{{ vm_info.virtual_machines }}"
 
-  - debug: var=uuid
-
   - name: Turn off autostart
-    connection: local
+    delegate_to: localhost
     vmware_autostart:
       name: "{{ vm_name }}"
       uuid: "{{ uuid }}"
@@ -64,27 +67,27 @@
       validate_certs: no
 
   - name: Power off the Stats VM
-    connection: local
+    delegate_to: localhost
     vmware_guest:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       validate_certs: no
       datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
+      folder: "{{ vstat_vm_folder['folders'][0] }}"
       name: "{{ vm_name }}"
       state: "poweredoff"
     when: vstat_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
   - name: Removing the Stats VM
-    connection: local
+    delegate_to: localhost
     vmware_guest:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       validate_certs: no
       datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
+      folder: "{{ vstat_vm_folder['folders'][0] }}"
       name: "{{ vm_name }}"
       state: "absent"
     when: (not preserve_vm | default( False ))

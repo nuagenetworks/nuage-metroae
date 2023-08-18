@@ -65,11 +65,11 @@ if [[ $# -lt 2 ]]; then
 fi
 
 # <zipped_directory> argument
-ZIPPED_DIR=$1
+ZIPPED_DIR=$CURRENT_DIR/$1
 shift
 
 # <unzip_directory> argument
-UNZIP_DIR=$1
+UNZIP_DIR=$CURRENT_DIR/$1
 shift
 
 $(which ansible-playbook) $PLAYBOOK_DIR/nuage_unzip.yml -e nuage_zipped_files_dir=$ZIPPED_DIR -e nuage_unzipped_files_dir=$UNZIP_DIR "${EXTRA_VARS[@]}"

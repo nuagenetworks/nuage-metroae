@@ -19,7 +19,7 @@ hostname: {{ item.mgmt_ip }}
 system_name: {{ item.system_name }}
 {% endif %}
 
-{% if item.target_server_type is match("kvm") or item.target_server_type is match("vcenter") or item.target_server_type is match("nuagex") %}
+{% if item.target_server_type is match("kvm") or item.target_server_type is match("vcenter") %}
 target_server: {{ item.target_server }}
 {% endif %}
 
@@ -118,6 +118,12 @@ vsd_fqdn: {{ common.vsd_fqdn_global }}
 system_ip: {{ item.system_ip }}
 {% endif %}
 
+{% if item.router_id is defined %}
+router_id: {{ item.router_id }}
+{% elif item.system_ip is defined %}
+router_id: {{ item.system_ip }}
+{% endif %}
+
 xmpp:
 {% if item.xmpp_username is defined %}
   username: {{ item.xmpp_username }}
@@ -148,7 +154,6 @@ openstack_mgmt_port_security_groups:
 {% endfor %}
 {% endif %}
 
-
 {% if item.openstack_control_port_name is defined %}
 openstack_control_port_name: {{ item.openstack_control_port_name }}
 {% endif %}
@@ -161,6 +166,84 @@ openstack_control_port_security_groups:
 
 {% if item.openstack_availability_zone is defined %}
 openstack_availability_zone: {{ item.openstack_availability_zone }}
+{% endif %}
+{% if item.vsc_trunk_name is defined %}
+vsc_trunk_name: "{{ item.vsc_trunk_name }}"
+{% endif %}
+{% if item.segmentation_id1 is defined %}
+segmentation_id1: "{{ item.segmentation_id1 }}"
+{% endif %}
+{% if item.segmentation_id2 is defined %}
+segmentation_id2: "{{ item.segmentation_id2 }}"
+{% endif %}
+{% if item.segmentation_id3 is defined %}
+segmentation_id3: "{{ item.segmentation_id3 }}"
+{% endif %}
+{% if item.openstack_external_network1 is defined %}
+openstack_external_network1: "{{ item.openstack_external_network1 }}"
+{% endif %}
+{% if item.openstack_external_subnet1 is defined %}
+openstack_external_subnet1: "{{ item.openstack_external_subnet1 }}"
+{% endif %}
+{% if item.openstack_external_network2 is defined %}
+openstack_external_network2: "{{ item.openstack_external_network2 }}"
+{% endif %}
+{% if item.openstack_external_subnet2 is defined %}
+openstack_external_subnet2: "{{ item.openstack_external_subnet2 }}"
+{% endif %}
+{% if item.openstack_external_network3 is defined %}
+openstack_external_network3: "{{ item.openstack_external_network3 }}"
+{% endif %}
+{% if item.openstack_external_subnet3 is defined %}
+openstack_external_subnet3: "{{ item.openstack_external_subnet3 }}"
+{% endif %}
+{% if item.external_ip1 is defined %}
+external_ip1: "{{ item.external_ip1 }}"
+{% endif %}
+{% if item.external_ip1_prefix is defined %}
+external_ip1_prefix: "{{ item.external_ip1_prefix }}"
+{% endif %}
+{% if item.external_ip2 is defined %}
+external_ip2: "{{ item.external_ip2 }}"
+{% endif %}
+{% if item.external_ip2_prefix is defined %}
+external_ip2_prefix: "{{ item.external_ip2_prefix }}"
+{% endif %}
+{% if item.external_ip3 is defined %}
+external_ip3: "{{ item.external_ip3 }}"
+{% endif %}
+{% if item.external_ip3_prefix is defined %}
+external_ip3_prefix: "{{ item.external_ip3_prefix }}"
+{% endif %}
+
+{% if item.openstack_external_port1_name is defined %}
+openstack_external_port1_name: {{ item.openstack_external_port1_name }}
+{% endif %}
+{% if item.openstack_external_port1_security_groups is defined %}
+openstack_external_port1_security_groups:
+{% for group in item.openstack_external_port1_security_groups %}
+  - {{ group }}
+{% endfor %}
+{% endif %}
+
+{% if item.openstack_external_port2_name is defined %}
+openstack_external_port2_name: {{ item.openstack_external_port2_name }}
+{% endif %}
+{% if item.openstack_external_port2_security_groups is defined %}
+openstack_external_port2_security_groups:
+{% for group in item.openstack_external_port2_security_groups %}
+  - {{ group }}
+{% endfor %}
+{% endif %}
+
+{% if item.openstack_external_port3_name is defined %}
+openstack_external_port3_name: {{ item.openstack_external_port3_name }}
+{% endif %}
+{% if item.openstack_external_port3_security_groups is defined %}
+openstack_external_port3_security_groups:
+{% for group in item.openstack_external_port3_security_groups %}
+  - {{ group }}
+{% endfor %}
 {% endif %}
 
 {% endif %}
@@ -190,6 +273,7 @@ xmpp_domain: {{ item.xmpp_domain }}
 {% endif %}
 
 enable_hardening: {{ item.enable_hardening | default(True) }}
+override_vsc_config: {{ item.override_vsc_config | default(False) }}
 
 {% if item.route_reflector_ip_list is defined %}
 route_reflector_ip_list:
@@ -205,4 +289,10 @@ vsc_config_file_paths:
 {% endfor %}
 {% else %}
 vsc_config_file_paths: []
+{% endif %}
+
+{% if item.bgp_interface_ip_address is defined %}
+bgp_interface_ip_address: {{ item.bgp_interface_ip_address }}
+bgp_interface_ip_prefix: {{ item.bgp_interface_ip_prefix | default(24) }}
+bgp_interface_vlan_id: {{ item.bgp_interface_vlan_id | default(1000) }}
 {% endif %}

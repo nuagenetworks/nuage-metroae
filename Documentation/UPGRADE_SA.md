@@ -10,6 +10,14 @@ Note that if your existing VSP components were not installed using MetroAE or we
 
 By default, the special enterprise called Shared Infrastructure is created on the VSD. When putting domains in maintenance mode prior to an upgrade, MetroAE skips Shared Infrastructure domains because they cannot be modified.
 
+### Patch Upgrade for VSD, while installing VSD
+A inplace upgrade can be carried out during the installation of the VSD cluster. The VSDs are installed and patch will be performed directly if the `vsd_install_inplace_upgrade` is set to true. The migration ISO wil be mounted and the migration script will be executed after the successful installation of VSD. A VSD inplace upgrade during the installation is:
+
+* Supported beginning in VSD version 5.4.1.
+* The `upgrade_from_version` variable must be set to main version of VSD i.e. 5.4.1,6.0.3 or 20.10.R1 and `upgrade_to_version` variable must be set to respactive patch versions i.e for 5.4.1 it could be 5.4.1u1, for 6.0.3 it could be 6.0.5, for 20.10.R1 it could be 20.10.R2 etc.
+
+Note that to upgrade VSDs during the installation it can be done using `install everything`, `install vsds` commands.
+
 ### Patch Upgrade for VSD, AKA in-place upgrade
 
 A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' release to another. A patch upgrade is also referred to as an in-place upgrade. The existing VSDs will remain in service. The migration ISO will be mounted and the migration script will be executed on each VSD. A patch upgrade is:
@@ -34,37 +42,37 @@ If your topology does not include VRS you can upgrade everything with one comman
 
 ### Upgrade All Components (without VRS)
 
-     metroae upgrade everything
+     metroae-container upgrade everything
 
 Issuing this workflow will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option does not pause until completion to allow VRS(s) to be upgraded.  If VRS(s) need to be upgraded, the following option should be performed instead.
 
 ### Upgrade All Components (with VRS)
 
-     metroae upgrade beforevrs
+     metroae-container upgrade beforevrs
 
      ( Upgrade the VRS(s) )
 
-     metroae upgrade aftervrs
+     metroae-container upgrade aftervrs
 
 Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.
 
 ### Upgrade Individual Components
 
-     metroae upgrade preupgrade health
+     metroae-container upgrade preupgrade health
 
-     metroae upgrade vsds
+     metroae-container upgrade vsds
 
-     metroae upgrade vscs beforevrs
+     metroae-container upgrade vscs beforevrs
 
      ( Upgrade the VRS(s) )
 
-     metroae upgrade vscs aftervrs
+     metroae-container upgrade vscs aftervrs
 
-     metroae upgrade vstats
+     metroae-container upgrade vstats
 
-     metroae upgrade postdeploy
+     metroae-container upgrade postdeploy
 
-     metroae upgrade postupgrade health
+     metroae-container upgrade postupgrade health
 
 Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.  Performing individual workflows can allow specific components to be skipped or upgraded at different times.
 
@@ -76,13 +84,13 @@ The following workflows will upgrade each component in individual steps.  The st
 
 1. Run health checks on VSD, VSC and VSTAT.
 
-     `metroae upgrade preupgrade health`
+     `metroae-container upgrade preupgrade health`
 
      Check the health reports carefully for any reported errors before proceeding. You can run health checks at any time during the upgrade process.
 
 2. Backup the VSD node database.
 
-     `metroae upgrade sa vsd dbbackup`
+     `metroae-container upgrade sa vsd dbbackup`
 
     The VSD node database is backed up.
 
@@ -90,14 +98,14 @@ The following workflows will upgrade each component in individual steps.  The st
 
     **Note**
     MetroAE provides a simple tool for optionally cleaning up the backup files that are generated during the upgrade process. The tool deletes the backup files for both VSD and VSC. There are two modes foe clean-up, the first one deletes all the backups and the second one deletes only the latest backup. By default the tool deletes only the latest backup. If you'd like to clean-up the backup files, you can simply run below commands:
-    Clean up all the backup files: `metroae vsp_upgrade_cleanup -e delete_all_backups=true`
-    Clean up the latest backup files: `metroae vsp_upgrade_cleanup`
+    Clean up all the backup files: `metroae-container vsp_upgrade_cleanup -e delete_all_backups=true`
+    Clean up the latest backup files: `metroae-container vsp_upgrade_cleanup`
 
 ### Upgrade VSD
 
 1. Power off the VSD node.
 
-     `metroae upgrade sa vsd shutdown`
+     `metroae-container upgrade sa vsd shutdown`
 
      VSD is shut down; it is not deleted. (The new node is brought up with the `upgrade_vmname` you previously specified.) You have the option of powering down VSD manually instead.
 
@@ -105,29 +113,34 @@ The following workflows will upgrade each component in individual steps.  The st
 
 2. Predeploy the new VSD node.
 
-     `metroae install vsds predeploy`
+     `metroae-container install vsds predeploy`
 
      The new VSD node is now up and running; it is not yet configured.
 
-     **Troubleshooting**: If you experience a failure, delete the new node by executing the command `metroae upgrade destroy sa vsd`, then re-execute the predeploy command. Do NOT run `metroae destroy vsds` as this command destroys the "old" VM which is not what we want to do here.
+     **Troubleshooting**: If you experience a failure, delete the new node by executing the command `metroae-container upgrade destroy sa vsd`, then re-execute the predeploy command. Do NOT run `metroae-container destroy vsds` as this command destroys the "old" VM which is not what we want to do here.
 
 3. Deploy the new VSD node.
 
-     `metroae upgrade sa vsd deploy`
+     `metroae-container upgrade sa vsd deploy`
 
      The VSD node is upgraded.
 
-     **Troubleshooting**: If you experience a failure before the VSD install script runs, re-execute the command. If it fails a second time or if the failure occurs after the VSD install script runs, destroy the VMs (either manually or with the command `metroae upgrade destroy sa vsd`) then re-execute the deploy command. Do NOT run `metroae destroy vsds` for this step.
+     **Troubleshooting**: If you experience a failure before the VSD install script runs, re-execute the command. If it fails a second time or if the failure occurs after the VSD install script runs, destroy the VMs (either manually or with the command `metroae-container upgrade destroy sa vsd`) then re-execute the deploy command. Do NOT run `metroae-container destroy vsds` for this step.
 
 4. Set the VSD upgrade complete flag.
 
-     `metroae upgrade sa vsd complete`
+     `metroae-container upgrade sa vsd complete`
 
      The upgrade flag is set to complete.
 
      **Troubleshooting**: If you experience a failure, you can re-execute the command.
+5. Apply VSD license (if needed)
+     
+     `metroae-container vsd license`
 
-5. Log into the VSD and verify the new version.
+     The VSD license will be applied.
+     
+6. Log into the VSD and verify the new version.
 
 ### Upgrade VSC
 
@@ -135,19 +148,19 @@ This example is for one VSC node. If your topology has more than one VSC node, p
 
 1. Run VSC health check (optional).
 
-     `metroae upgrade sa vsc health -e report_filename=vsc_preupgrade_health.txt`
+     `metroae-container upgrade sa vsc health -e report_filename=vsc_preupgrade_health.txt`
 
      You performed health checks during preupgrade preparations, but it is good practice to run the check here as well to make sure the VSD upgrade has not caused any problems.
 
 2. Backup and prepare the VSC node.
 
-     `metroae upgrade sa vsc backup`
+     `metroae-container upgrade sa vsc backup`
 
      **Troubleshooting**: If you experience failure, you can re-execute the command.
 
 3. Deploy VSC.
 
-     `metroae upgrade sa vsc deploy`
+     `metroae-container upgrade sa vsc deploy`
 
      The VSC is upgraded.
 
@@ -155,7 +168,7 @@ This example is for one VSC node. If your topology has more than one VSC node, p
 
 4. Run VSC postdeploy.
 
-     `metroae upgrade sa vsc postdeploy`
+     `metroae-container upgrade sa vsc postdeploy`
 
      VSC upgrade is complete.
 
@@ -171,25 +184,25 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 1. Run VSTAT health check (optional).
 
-     `metroae upgrade sa vstat health -e report_filename=vstat_preupgrade_health.txt`
+     `metroae-container upgrade sa vstat health -e report_filename=vstat_preupgrade_health.txt`
 
      You performed health checks during preupgrade preparations, but it is good practice to run the check here as well to make sure the VSD upgrade has not caused any problems.
 
 2. Prepare the VSTAT node for upgrade.
 
-     `metroae upgrade sa vstat prep`
+     `metroae-container upgrade sa vstat prep`
 
      Sets up SSH and disables stats collection.
 
 3. Upgrade the VSTAT node.
 
-     `metroae upgrade sa vstat inplace`
+     `metroae-container upgrade sa vstat inplace`
 
      Performs an in-place upgrade of the VSTAT.
 
 4. Complete VSTAT upgrade and perform post-upgrade checks.
 
-     `metroae upgrade sa vstat wrapup`
+     `metroae-container upgrade sa vstat wrapup`
 
      Completes the upgrade process, renables stats and performs a series of checks to ensure the VSTAT is healthy.
 
@@ -197,7 +210,7 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 1. Finalize the settings.
 
-     `metroae upgrade postdeploy`
+     `metroae-container upgrade postdeploy`
 
      The final steps for the upgrade are executed.
 
@@ -205,7 +218,7 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 2. Run a health check.
 
-     `metroae upgrade postupgrade health`
+     `metroae-container upgrade postupgrade health`
 
      Health reports are created that can be compared with the ones produced during preupgrade preparations. Investigate carefully any errors or discrepancies.
 

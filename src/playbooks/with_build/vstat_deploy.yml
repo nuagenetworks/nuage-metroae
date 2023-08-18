@@ -1,5 +1,5 @@
 ---
-- hosts: vstats
+- hosts: vstats,data_vstats,add_data_vstats
   gather_facts: no
   pre_tasks:
     - name: Lets run VSTAT deploy hooks
@@ -15,6 +15,10 @@
         loop_var: hook
   roles:
     - vstat-deploy
+  post_tasks:
+    - include_role:
+        name: vstat-deploy
+        tasks_from: vstat_security_hardening.yml
 
 - hosts: primary_vstats
   gather_facts: no
@@ -36,6 +40,13 @@
         loop_var: hook
   roles:
     - vstat-deploy
+  post_tasks:
+    - include_role:
+        name: vstat-deploy
+        tasks_from: vstat_security_hardening.yml
 
 - name: Run VSTAT Standby Deploy
   import_playbook: "vstat_standby_deploy.yml"
+
+- name: VSTAT Update license
+  import_playbook: "vstat_update_license.yml"

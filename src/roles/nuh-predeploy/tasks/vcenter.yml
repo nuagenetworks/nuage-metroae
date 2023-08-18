@@ -1,0 +1,172 @@
+---
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
+- block:
+
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+
+  when: upgrade
+
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
+  when: not upgrade
+
+- include_role:
+    name: check-node-running
+
+- name: Display if skipping predeploy
+  debug:
+    msg:
+      - "******************************************************"
+      - "Skipping NUH VM creation because it is already present"
+      - "******************************************************"
+  when: node_running
+
+- block:
+
+  - name: Set fact for internal network
+    set_fact:
+      internal_network: "Internal"
+    when: internal_bridge is defined
+
+  - name: Configure vCenter path
+    set_fact:
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}\
+        {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference | urlencode, '') }}\
+        {{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool | urlencode, '') }}"
+
+  - name: Configure ovftool command
+    set_fact:
+      ovftool_command: >-
+        {{ vcenter_global.ovftool }}
+        --acceptAllEulas
+        --noSSLVerify
+        --powerOn
+        -dm=thin
+        -ds={{ vcenter.datastore }}
+        {% if hostvars[inventory_hostname].ansible_verbosity > 0 %}
+        --X:logLevel=verbose
+        --X:logToConsole
+        {% else %}
+        --machineOutput
+        {% endif %}
+        {% if vcenter.vmfolder is defined %}
+        -vf={{ vcenter.vmfolder }}
+        {% endif %}
+        -n={{ vm_name }}
+        --net:"Management={{ mgmt_bridge }}"
+        {% if internal_bridge is defined %}
+        --net:"{{ internal_network }}={{ internal_bridge }}"
+        {% endif %}
+        "{{ image_path }}/{{ image_file_name }}"
+
+  - name: Deploy NUH image on vCenter
+    include_role:
+      name: common
+      tasks_from: vcenter-deploy-image
+
+  - name: Finding VM folder
+    delegate_to: localhost
+    vmware_guest_find:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      validate_certs: no
+    register: nuh_vm_folder
+
+  - name: Gathering info on VM
+    delegate_to: localhost
+    vmware_guest_info:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      folder: "{{ nuh_vm_folder['folders'][0] }}"
+      name: "{{ vm_name }}"
+      validate_certs: no
+    register: nuh_vm_facts
+
+  - debug: var=nuh_vm_facts verbosity=1
+
+  - name: Add external network adapters to NUH
+    delegate_to: localhost
+    vmware_guest_network:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      folder: "{{ nuh_vm_folder['folders'][0] }}"
+      name: "{{ vm_name }}"
+      validate_certs: no
+      gather_network_info: false
+      connected: true
+      start_connected: true
+      state: "present"
+      network_name: "{{ item.name }}"
+      switch: "{{ item.dvswitch_name | default(omit) }}"
+    register: network_info
+    loop: "{{ external_interface_networks }}"
+    when: external_interface_networks is defined and external_interface_networks | length > 0
+
+  - debug: var=network_info verbosity=1
+
+  - name: Waiting until VMware tools becomes available
+    delegate_to: localhost
+    vmware_guest_tools_wait:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      folder: "{{ vcenter.vmfolder | default(omit) }}"
+      validate_certs: no
+    register: vm_facts
+
+  - name: Setup networking on NUH
+    include_role:
+      name: common
+      tasks_from: vcenter-setup-networking
+    vars:
+      vm_username: "{{ nuh_default_username }}"
+      vm_password: "{{ nuh_default_password }}"
+      ifcfg_eth0_contents: "{{ lookup('template', 'ifcfg-eth0.j2') }}"
+      skip_hostname: False
+
+  - name: Get the public key for the current user
+    command: cat "{{ user_ssh_pub_key }}"
+    delegate_to: localhost
+    register: current_user_ssh_key
+
+  - name: Inject SSH keys into NUH
+    include_role:
+      name: common
+      tasks_from: vcenter-inject-ssh-keys
+    vars:
+      vm_username: "{{ nuh_default_username }}"
+      vm_password: "{{ nuh_default_password }}"
+
+  - name: Reboot NUH VM
+    delegate_to: localhost
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ nuh_default_username }}"
+      vm_password: "{{ nuh_default_password }}"
+      vm_shell: "/usr/sbin/reboot"
+
+  when: not node_running

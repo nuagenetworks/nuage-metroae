@@ -12,8 +12,13 @@ $TTL 3D
 ;
 
 localhost       A       127.0.0.1
-
-{% for key, value in dns_mgmt_lookup.items() %}
-{{ key.split('.')[0] }}        A        {{value}}
+; ===
+{% for host,value in hostvars.items() %}
+{% if host != 'localhost' %}
+{{ host.split('.')[0] }}    A   {{ value['mgmt_ip'] }}
+{% if host in groups['vsds']  %}
+xmpp    A   {{ value['mgmt_ip'] }}    ;; xmpp entry
+_xmpp-client._tcp.xmpp.{{ dns_mgmt.split('.')[1:]|join('.') }}. IN SRV 10 0 5222 {{ value['inventory_hostname'] }}.   ;; SRV record
+{% endif %}
+{% endif %}
 {% endfor %}
-

@@ -1,0 +1,12 @@
+- name: Check if file is present on localhost
+  stat:
+    path: "{{ file_path }}"
+  register: file_present
+  delegate_to: localhost
+
+- name: Assert that file must exist on localhost
+  assert:
+    that: "file_present.stat.exists"
+    success_msg: "{{ success_message | default('File exists') }}: {{ file_path }}"
+    fail_msg: "{{ fail_message | default('File does not exist') }}: {{ file_path }}"
+  ignore_errors: "{{ continue_on_error | default(false)}}"

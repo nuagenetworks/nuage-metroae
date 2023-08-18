@@ -20,7 +20,7 @@
 # Install Prerequisites
 ##########################
 - name: Pull facts of localhost
-  connection: local
+  delegate_to: localhost
   action: setup
 
 - block:
@@ -28,13 +28,15 @@
     command:
       cmd: rpm -q unzip
       warn: no
-    connection: local
+    delegate_to: localhost
     register: rpm_check
     ignore_errors: True
 
   - name: Install packages for RedHat OS family distros
     yum: name=unzip state=present
-    connection: local
+    vars:
+      ansible_python_interpreter: /usr/bin/python2
+    delegate_to: localhost
     environment:
       http_proxy: "{{ yum_proxy | default('') }}"
       https_proxy: "{{ yum_proxy | default('') }}"
@@ -43,7 +45,7 @@
 
 - name: Install unzip on Debian OS family distribution
   apt: name=unzip state=present
-  connection: local
+  delegate_to: localhost
   when: ansible_os_family is match("Debian")
 
 
@@ -211,14 +213,6 @@
       unpack_pattern:          "(?i)Nuage-utility-host-ova.*"
       unpack_target_folder:    "vns/nuh/ova"
 
-  # for releases starting from 4.0.R9 when VNS packages were archived to 2 files
-  # + unpack AWS archive
-  - name: Find and unzip VNS NSG Archive
-    import_tasks: unpack_actions.yml
-    vars:
-      unpack_pattern:        "(?i)Nuage-VNS-NSG.*"
-      unpack_target_folder:  "vns/nsg"
-
   - name: Find and unzip VNS AWS NSG Archive
     import_tasks: unpack_actions.yml
     vars:
@@ -254,7 +248,7 @@
   - name: Find and unzip the Nokia VSR Archive
     import_tasks: unpack_actions_vsr.yml
     vars:
-      unpack_pattern:        "(?i)Nokia-VSR-VM.*"
+      unpack_pattern:        "(?i)Nokia-VSR*.*"
       unpack_target_folder:  "vsr"
   tags:
     - vsr
@@ -292,5 +286,17 @@
     vars:
       unpack_pattern:       "(?i)nuage-webfilter.*OVA.*"
       unpack_target_folder: "webfilter/ova"
+  tags:
+    - vsd
+
+##########################
+## TPM
+##########################
+- block:
+  - name: Find and unzip TPM QCOW2 Archive
+    import_tasks: unpack_actions.yml
+    vars:
+      unpack_pattern:       "(?i)nuage-threat.*QCOW.*"
+      unpack_target_folder: "tpm"
   tags:
     - vsd

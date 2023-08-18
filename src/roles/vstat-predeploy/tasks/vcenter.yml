@@ -40,6 +40,9 @@
       tasks_from: configure-ovftool
     vars:
       management_network: "Management"
+      number_of_cpus: "{{ vstat_cpu_cores }}"
+      memory_size: "{{ vstat_ram }}"
+      diskSize: "{{ vstat_fallocate_size_gb }}"
 
   - name: Deploy VSTAT image on vCenter
     include_role:
@@ -47,7 +50,7 @@
       tasks_from: vcenter-deploy-image
 
   - name: Waiting until VMware tools becomes available
-    connection: local
+    delegate_to: localhost
     vmware_guest_tools_wait:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -57,17 +60,33 @@
       folder: "{{ vcenter.vmfolder | default(omit) }}"
       validate_certs: no
     register: vm_facts
-
-  - debug: var=vm_facts verbosity=1
-
+    
   - name: Set VM UUID
     set_fact:
       uuid: "{{ vm_facts.instance.hw_product_uuid }}"
 
   - debug: var=uuid
 
+  - name: Add an extra ES Disk
+    delegate_to: localhost
+    vmware_guest_disk:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      validate_certs: no
+      uuid: "{{ uuid }}"
+      disk:
+        - size_gb: "{{ extra_disk_size_gb }}"
+          type: thin
+          datastore: "{{ vcenter.datastore }}"
+          state: present
+          scsi_controller: 1
+          unit_number: 1
+    when: extra_disk_size_gb is defined
+
   - name: Turn on autostart
-    connection: local
+    delegate_to: localhost
     vmware_autostart:
       name: "{{ vm_name }}"
       uuid: "{{ uuid }}"
@@ -102,7 +121,7 @@
       vm_password: "{{ vstat_default_password }}"
 
   - name: Restart Network services in the VM
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -117,7 +136,7 @@
       vm_shell_args: " network restart"
 
   - name: Disable cloud-init on the VM
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"

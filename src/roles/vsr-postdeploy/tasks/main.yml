@@ -9,6 +9,8 @@
 - name: Copy Python python scripts
   import_tasks: "copy_python_scripts.yml"
 
+- meta: reset_connection
+
 - name: Create rollback point
   sros_config:
     lines:
@@ -37,12 +39,15 @@
 - name: Show rootified commands that will be sent to VSR
   debug: msg='{{ lookup("template", "vsd_integration.cfg.j2" ) | sros_rootify }}' verbosity=1
 
+- meta: reset_connection
 
 - name: Configure additional configuration to integrate VSR with Nuage VSD
   sros_config:
     lines: '{{ lookup("template", "vsd_integration.cfg.j2" ) | sros_rootify }}'
     provider: "{{ provider_creds }}"
   delegate_to: localhost
+
+- meta: reset_connection
 
 - name: Save VSR config
   sros_config:

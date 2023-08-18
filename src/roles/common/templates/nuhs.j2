@@ -3,7 +3,7 @@
 # will be lost if reset-build or build is run
 #
 
-target_server_type: kvm
+target_server_type: {{ item.target_server_type | default('kvm') }}
 
 required_bridges:
   - mgmt
@@ -18,9 +18,15 @@ vmname: {{ item.vmname }}
 vmname: {{ item.hostname }}
 {% endif %}
 
+upgrade_vmname: {{ item.upgrade_vmname is defined | ternary( item.upgrade_vmname, [ item.vmname | default(item.hostname), "new" ] | join('-') ) }}
+
 mgmt_ip: {{ item.mgmt_ip }}
 mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
+
+{% if item.mgmt_ip | ipv6 != False %}
+enable_ipv6: true
+{% endif %}
 
 {% if item.internal_ip is defined %}
 internal_ip: {{ item.internal_ip }}
@@ -31,17 +37,42 @@ internal_gateway: {{ item.internal_gateway }}
 {% if item.external_interface_list is defined %}
 external_interfaces:
 {% for interface in nuh_external_interfaces %}
-{% for external_if in item.external_interface_list %}
-{% if interface.name in external_if %}
-    - name: "External{{ loop.index }}"
+{% if interface.name in item.external_interface_list %}
+    - name: "{{ interface.name }}"
+      dev: "eth{{ interface.dev | default(loop.index + 1) }}"
       external_prefix: {{ interface.external_ip_prefix | default(24) }}
       external_ip: {{ interface.external_ip }}
+{% if interface.external_peer_ip is defined %}
+      external_peer_ip: {{ interface.external_peer_ip }}
+{% endif %}
       external_gateway: {{ interface.external_gateway }}
       external_bridge: {{ interface.external_bridge }}
       vlan: {{ interface.vlan | default(0) }}
+      external_fqdn: {{ interface.external_fqdn }}
+{% if interface.external_peer_fqdn is defined %}
+      external_peer_fqdn: {{ interface.external_peer_fqdn }}
+{% endif %}
+{% if item.target_server_type | default("kvm") is match("openstack") %}
+      openstack_external_network: {{ interface.openstack_external_network }}
+      openstack_external_subnet: {{ interface.openstack_external_subnet }}
+       
+{% endif %}
 {% endif %}
 {% endfor %}
+{% if item.target_server_type | default("kvm") is match("vcenter") %}
+external_interface_networks:
+{% for interface in nuh_external_interfaces %}
+{% if interface.name in item.external_interface_list %}
+  - state: new
+    name: "{{ interface.external_bridge }}"
+    connected: true
+    start_connected: true
+{% if interface.dvswitch_name is defined %}
+    dvswitch_name: "{{ interface.dvswitch_name }}"
+{% endif %}
+{% endif %}
 {% endfor %}
+{% endif %}
 {% endif %}
 
 {% if item.mgmt_bridge is defined %}
@@ -70,6 +101,28 @@ nuh_timezone: {{ item.timezone | default("America/Toronto") }}
 skip_vsd_installed_check: {{ item.skip_vsd_installed_check | default(false) }}
 health_monitoring_agent: {{ item.health_monitoring_agent | default("none") }}
 
+vsdconfig_enable: {{ nuh_common.vsdconfig_enable | default(false) | lower }}
+elasticsearch_enable: {{ nuh_common.elasticsearch_enable | default(false) | lower }}
+
+{% if nuh_vrrp is defined and nuh_vrrp %}
+vrrp:
+{% for vr in nuh_vrrp %}
+  - router_id: {{ vr.router_id }}
+    interface: {{ vr.interface }}
+{% if vr.vip is defined and vr.vip %}
+    vip:
+{% for vip_address in vr.vip %}
+      - {{ vip_address }}
+{% endfor %}
+{% endif %}
+    enabled: {{ vr.enabled | default(true) }}
+{% endfor %}
+{% endif %}
+
 {% if item.custom_configuration_file_location is defined %}
 custom_configuration_file_location: {{ item.custom_configuration_file_location }}
 {% endif %}
+
+{%- if item.preserve_vm is defined %}
+preserve_vm: {{ item.preserve_vm }}
+{%- endif %}

@@ -1,7 +1,7 @@
 - include_role:
     name: check-skip-target-server
   vars:
-    - target_server_list: ["kvm", "vcenter", "aws", "openstack", "nuagex"]
+    - target_server_list: ["kvm", "vcenter", "aws", "openstack"]
 
 - include_role:
     name: skip-actions
@@ -56,13 +56,6 @@
     - vstat
     - vstat-predeploy
 
-- import_tasks: nuagex.yml
-  when: target_server_type is match("nuagex")
-  tags:
-    - nuagex
-    - vstat
-    - vstat-predeploy
-
 - block:
   - name: Clean known_hosts of VSTATs (ignoring errors)
     known_hosts:
@@ -86,6 +79,8 @@
       yum:
         name: nfs-utils
         state: present
+      vars:
+        ansible_python_interpreter: /usr/bin/python2
 
     - name: Create Backup directory
       file:

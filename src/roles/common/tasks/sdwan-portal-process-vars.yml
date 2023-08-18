@@ -32,6 +32,21 @@
   when: not portal_check
 
 - name: Create host_vars files for sdwan portal
-  template: src=sdwan_portal.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+  include_tasks: write-host-files.yml
+  vars:
+    component_template: sdwan_portal
+    component_hostname: "{{ component.hostname }}"
+  loop_control:
+    loop_var: component
   with_items: "{{ portals }}"
   when: portal_check
+
+- name: Create host_vars files for sdwan portal GRCN
+  include_tasks: write-host-files.yml
+  vars:
+    component_template: portal_grcn
+    component_hostname: "{{ component.hostname }}"
+  loop_control:
+    loop_var: component
+  with_items: "{{ portal_grcn }}"
+  when: portal_grcn is defined

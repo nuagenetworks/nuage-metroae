@@ -1,5 +1,10 @@
 - block:
 
+  - name: Get current VSD API version
+    include_role:
+      name: common
+      tasks_from: get-current-vsd-api-version
+
   - name: Format VSPK auth for VSPK module
     set_fact:
       vspk_auth:
@@ -7,11 +12,11 @@
         api_password: "{{ vsd_auth.password }}"
         api_enterprise: "{{ vsd_auth.enterprise }}"
         api_url: "{{ vsd_auth.api_url }}"
-        api_version: v5_0
+        api_version: "{{ current_api_version }}"
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: Find the VSP on the VSD
-    connection: local
+    delegate_to: localhost
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: VSP
@@ -19,7 +24,7 @@
     register: vsp
 
   - name: Fetch Netconfmanager with connected status
-    connection: local
+    delegate_to: localhost
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: NetconfManager

@@ -1,7 +1,24 @@
 ---
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
+- block:
+
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+
+  when: upgrade
+
 - name: Set local variable with vmname
   set_fact:
     vm_name: "{{ vmname }}"
+  when: not upgrade
 
 - name: Setup KVM on target server
   include_role:
@@ -109,6 +126,10 @@
     command: cat "{{ user_ssh_pub_key }}"
     delegate_to: localhost
     register: current_user_ssh_key
+
+  - name: Enable IPv6 in qcow image
+    command: virt-edit -a {{ guestfish_dest }} /etc/sysctl.conf -e s/net.ipv6.conf.all.disable_ipv6=1/net.ipv6.conf.all.disable_ipv6=0/
+    when: enable_ipv6 | default(False)
 
   - name: Inject SSH keys into VSD qcow image
     include_role:

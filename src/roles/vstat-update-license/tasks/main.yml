@@ -1,0 +1,54 @@
+- block:
+
+  - name: Check the current license validity for VSTAT
+    shell: curl -X GET localhost:9200/_license?pretty --stderr - | grep expiry
+    ignore_errors: true
+
+  - name: Copy license file to VSTAT
+    copy:
+      src: "{{ vstat_license_file }}"
+      dest: "~/vstat_license"
+
+  - name: Apply the patch
+    shell: curl -X PUT http://{{inventory_hostname}}:9200/_license -H "Content-Type:application/json" -d @vstat_license
+    ignore_errors: true
+    register: license_applied
+    retries: 5
+    delay: 30
+    until: "license_applied.stdout is search('\"acknowledged\":true')"
+
+  - name: Check the license on VSTAT after renewal
+    shell: curl -X GET localhost:9200/_license?pretty --stderr - | grep expiry
+    register: license_details
+
+  - name: Get timestamp from the system
+    shell: "date +%Y-%m-%d%H:%M:%S"
+    register: tstamp
+
+  - name: Extracting Current date and time from license
+    set_fact:
+      cur_date: "{{ tstamp.stdout[0:10]}}"
+      cur_time: "{{ tstamp.stdout[10:]}}"
+      cur_date_time: "{{ tstamp.stdout[0:10]}} {{ tstamp.stdout[10:]}}"
+      vstat_license_date_time: "{{ license_details.stdout.split()[2][1:10] }} {{ license_details.stdout.split()[2][12:20] }}"
+
+  - name: Days remaining until license expires
+    set_fact:
+      time_diff: "{{ ( ((vstat_license_date_time | to_datetime) - (cur_date_time | to_datetime)).total_seconds() / (3600*24) ) | int }}"
+
+  - name: Ensuring license is unexpired
+    assert:
+      that: (time_diff | int) > 1
+      fail_msg: "The VSTAT license has expired"
+
+  - name: Remove license file from vstat
+    file:
+      path: "~/vstat_license"
+      state: absent
+
+  remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+  become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+  become_flags: "-i"
+  vars:
+    ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+  when: vstat_license_file is defined

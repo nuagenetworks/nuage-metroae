@@ -1,0 +1,26 @@
+---
+- name: Get unzipped files dir
+  set_fact:
+    nuage_unzipped_files_dir: "{{ common.nuage_unzipped_files_dir }}"
+
+- name: Handle nuage_unzipped_files_dir path
+
+  block:
+
+    - name: Replace non-relative path
+      set_fact:
+        nuage_unzipped_files_dir: "{{ nuage_unzipped_files_dir | regex_replace('.+?(?=metroae_data)', '/') }}"
+      when: common.nuage_unzipped_files_dir | regex_search("/metroae_data/")
+
+    - name: Replace relative path
+      set_fact: 
+        nuage_unzipped_files_dir: "{{ '/metroae_data/' + nuage_unzipped_files_dir }}"
+      when: common.nuage_unzipped_files_dir | regex_search("^[^/]")
+
+    - name: Check if directory needs to be specified to be under metroae_data installation mount directory
+      assert:
+        that:
+        - nuage_unzipped_files_dir | regex_search("/metroae_data/")
+        fail_msg: The directory needs to be specified under the /metroae_data/ installation mount directory from the container installation
+
+  when: role_path | regex_search("^/source/nuage-metroae")

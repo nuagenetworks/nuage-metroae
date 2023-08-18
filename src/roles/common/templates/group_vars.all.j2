@@ -9,6 +9,11 @@ user_ssh_pub_key: {{ common.user_ssh_pub_key | default('~/.ssh/id_rsa.pub') }}
 xmpp_tls: {{ common.xmpp_tls | default(True) }}
 openflow_tls: {{ common.openflow_tls | default(True) }}
 
+stats_out: {{ common.stats_out | default('false') }}
+{% if common.stats_out | default(false) %}
+stats_out_proxy: {{ common.stats_out_proxy | default(nuhs[0].hostname) }}
+{% endif %}
+
 vsd_fallocate_size_gb: {{ common.vsd_fallocate_size_gb | default(285) }}
 vsc_fallocate_size_gb: {{ common.vsc_fallocate_size_gb | default (0) }}
 vstat_allocate_size_gb: {{ common.vstat_allocate_size_gb | default(100) }}
@@ -20,8 +25,10 @@ vstat_ram: "{{ common.vstat_ram | default(16) }}"
 vcin_ram: "{{ common.vcin_ram | default(24) }}"
 nuh_ram: "{{ common.nuh_ram | default(8) }}"
 webfilter_ram: "{{ common.webfilter_ram | default(8) }}"
+tpm_ram: "{{ common.tpm_ram | default(8) }}"
 portal_ram: "{{ common.portal_ram | default(24) }}"
 portal_license_file: "{{ common.portal_license_file | default('NONE') }}"
+portal_allocate_size_gb: "{{ common.portal_allocate_size_gb | default(16) }}"
 vsd_license_required_days_left: {{ common.vsd_license_required_days_left | default(-1) }}
 vsd_fqdn: {{ common.vsd_fqdn_global | default('NONE') }}
 vsd_port: {{ common.vsd_port_global | default('8443') }}
@@ -37,18 +44,35 @@ vstat_cpu_cores: {{ common.vstat_cpu_cores | default(6)}}
 vnsutil_cpu_cores: {{ common.vnsutil_cpu_cores | default(2)}}
 nuh_cpu_cores: {{ common.nuh_cpu_cores | default(2)}}
 vsd_cpu_cores: {{ common.vsd_cpu_cores | default(6)}}
+vsc_cpu_cores: {{ common.vsc_cpu_cores | default(6)}}
 portal_cpu_cores: {{ common.portal_cpu_cores | default(6)}}
 vcin_cpu_cores: {{ common.vcin_cpu_cores | default(6)}}
 webfilter_cpu_cores: {{ common.webfilter_cpu_cores | default(2) }}
+tpm_cpu_cores: {{ common.tpm_cpu_cores | default(2) }}
 vcenter_start_vsd_with_interfaces_disabled: {{ common.vcenter_start_vsd_with_interfaces_disabled | default(false) }}
 vsd_inplace_upgrade: {{ inplace | default(false) }}
+vsd_install_inplace_upgrade: {{ common.vsd_install_inplace_upgrade | default(false) }}
+keep_root_access: {{ common.keep_root_access | default(false) }}
+
+
+{% if encrypted.nuh_notification_app_1_username is defined and encrypted.nuh_notification_app_1_password is defined %}
+notification_app1:
+  username: {{ encrypted.nuh_notification_app_1_username | indent(8, False) }}
+  password: {{ encrypted.nuh_notification_app_1_password | indent(8, False) }}
+{% endif %}
+
+{% if encrypted.nuh_notification_app_2_username is defined and encrypted.nuh_notification_app_2_password is defined %}
+notification_app2:
+  username: {{ encrypted.nuh_notification_app_2_username | indent(8, False) }}
+  password: {{ encrypted.nuh_notification_app_2_password | indent(8, False) }}
+{% endif %}
 
 vsc_command_timeout_seconds: "{{ vsc_command_timeout_seconds|default(180) }}"
 vsc_scp_timeout_seconds: "{{ vsc_scp_timeout_seconds|default(720) }}"
 
-{% if ssh_proxy_host is defined %}
+{% if common.ssh_proxy_host is defined %}
 ssh_proxy_username: {{ common.ssh_proxy_username | default('root') }}
-ssh_proxy_configuration: {{ common.ssh_proxy_username | default('root') }}@{{ ssh_proxy_host }}
+ssh_proxy_configuration: {{ common.ssh_proxy_username | default('root') }}@{{ common.ssh_proxy_host }}
 ssh_proxy_host: {{ common.ssh_proxy_host }}
 {% endif %}
 
@@ -80,7 +104,7 @@ yum_update: {{ common.yum_update | default(True) }}
 vstat_yum_update: {{ common.vstat_yum_update | default(False) }}
 
 vcenter_global:
-  ovftool: {{ common.vcenter_ovftool | default('/usr/bin/ovftool') }}
+  ovftool: {{ common.vcenter_ovftool | default('/usr/bin/ovftool') | relative_path_to_absolute_path }}
 
 {% if common.nuage_software_version is defined %}
 nuage_software_version: {{ common.nuage_software_version }}
@@ -92,7 +116,21 @@ upgrade_from_version: {{ upgrade.upgrade_from_version }}
 upgrade_to_version: {{ upgrade.upgrade_to_version }}
 {% endif %}
 
+{% if upgrade.upgrade_from_version is defined and upgrade.upgrade_from_version|replace('R', '') is version('20.10.4', '<') %}
+{% if upgrade.upgrade_to_version is defined and upgrade.upgrade_to_version|replace('R', '') is version('20.10.4', '>=') %}
+patch_ejabberd: True
+{% endif %}
+{% endif %}
+
 backup_vsd_host_file: {{ upgrade.backup_vsd_host_file | default(false) }}
+skip_disable_stats_collection: {{ upgrade.skip_disable_stats_collection | default(false) }}
+
+upgrade_portal: {{ upgrade.upgrade_portal | default(false) }}
+portal_maximum_disk_usage: 70
+
+{% if upgrade.vsd_preupgrade_db_check_script_path is defined %}
+vsd_preupgrade_db_check_script_path: {{ upgrade.vsd_preupgrade_db_check_script_path }}
+{% endif %}
 
 vstat_default_username: "root"
 vstat_default_password: "Alcateldc"
@@ -112,17 +150,27 @@ vnsutil_default_password: Alcateldc
 portal_default_username: root
 portal_default_password: Alcateldc
 
+nfs_default_username: root
+
+portal_database_default_username: vnsuser
+portal_database_default_password: Vnsuser1!
+
 nuh_default_username: root
 nuh_default_password: Alcateldc
 
 webfilter_default_username: root
 webfilter_default_password: Alcateldc
 
+tpm_default_username: administrator
+tpm_default_password: administrator
+
+tpm_cli_username: admin
+tpm_cli_password: Alcateldc1!
+
 dns_username: {{ dns_username | default("root") | indent(8, False) }}
 dns_password: {{ dns_password | default("Alcateldc") | indent(8, False) }}
 
-metro_reports_dir: {{ common.metro_reports_dir | default(playbook_dir + "/../../reports") }}
-failure_report_path: {{ playbook_dir  + "/../../failure_report.log" }}
+metro_reports_dir: {{ common.metro_reports_dir | default(playbook_dir + "/../../reports") | relative_path_to_absolute_path }}
 
 expected_bgp_admin_state: Up
 expected_bgp_oper_state: Up
@@ -147,6 +195,7 @@ vsd_auth:
   password: {{ encrypted.vsd_auth_password | default(vsd_default_auth) | indent(8, False) }}
   enterprise: "{{ common.vsd_auth_enterprise | default("csp") }}"
   api_url: "{{ common.vsd_auth_url | default("https://" + common.vsd_fqdn_global + ":8443") }}"
+
 
 vcin_auth:
   api_username: {{ encrypted.vcin_auth_username | default(vsd_default_auth) | indent(8, False) }}
@@ -185,6 +234,10 @@ vsc_custom_username: {{ encrypted.vsc_custom_username | indent(8, False) }}
 vsc_custom_password: {{ encrypted.vsc_custom_password | indent(8, False) }}
 {% endif %}
 
+{% if encrypted.nfs_custom_username is defined %}
+nfs_custom_username: {{ encrypted.nfs_custom_username | indent(8, False) }}
+{% endif %}
+
 {% if encrypted.netconf_vm_username is defined %}
 netconf_vm_username: {{ encrypted.netconf_vm_username | indent(8, False) }}
 {% endif %}
@@ -205,13 +258,21 @@ netconf_password: password
 {% endif %}
 
 {% if common.nuage_unzipped_files_dir is defined %}
-metro_backup_root: "{{ common.backup_directory_root | default( upgrade.metro_backup_root | default( common.nuage_unzipped_files_dir + "/backups" ) ) }}"
+metro_backup_root: "{{ common.backup_directory_root | default( upgrade.metro_backup_root | default( common.nuage_unzipped_files_dir + "/backups" ) ) | relative_path_to_absolute_path }}"
+nuage_unzipped_files_dir: "{{ common.nuage_unzipped_files_dir | relative_path_to_absolute_path }}"
 {% else %}
-metro_backup_root: "{{ common.backup_directory_root | default( upgrade.metro_backup_root | default( "/tmp/metro-backups" ) ) }}"
+metro_backup_root: "{{ common.backup_directory_root | default( upgrade.metro_backup_root | default( "/tmp/metro-backups" ) ) | relative_path_to_absolute_path }}"
 {% endif %}
 max_num_stored_backups: {{ common.max_num_stored_backups | default(-1) }}
 backup_to_restore: {{ common.backup_to_restore | default("backup-latest-full") }}
 keep_upgrade_backups: {{ upgrade.keep_upgrade_backups | default(False) }}
+
+
+{% if common.xmpp_tls_mode is defined %}
+xmpp_tls_mode : "{{ common.xmpp_tls_mode }}"
+{% else %}
+xmpp_tls_mode: "allow"
+{% endif %}
 
 {% if common.branding_zip_file is defined %}
 branding_zip_file: {{ common.branding_zip_file }}
@@ -271,22 +332,34 @@ openstack_auth:
 openstack_cacert: {{ common.openstack_cacert | default('null') }}
 {% endif %}
 
+{% if common.vsc_trunking is defined %}
+vsc_trunking: {{ common.vsc_trunking }}
+{% endif %}
+
 {% set zfb_nsg_list = nsgvs | selectattr("bootstrap_method", "equalto", "zfb_metro") | list %}
 
 {% if common.vsd_license_file is defined %}
-vsd_license_file: {{ common.vsd_license_file }}
+vsd_license_file: {{ common.vsd_license_file | relative_path_to_absolute_path  }}
 {% endif %}
 
 {% if common.vsd_cluster_license_file is defined %}
-vsd_cluster_license_file: {{ common.vsd_cluster_license_file }}
+vsd_cluster_license_file: {{ common.vsd_cluster_license_file | relative_path_to_absolute_path  }}
 {% endif %}
 
 {% if common.vsd_ejabberd_license_file is defined %}
-vsd_ejabberd_license_file: {{ common.vsd_ejabberd_license_file }}
+vsd_ejabberd_license_file: {{ common.vsd_ejabberd_license_file | relative_path_to_absolute_path  }}
+{% endif %}
+
+{% if upgrade.vsd_ejabberd_rpm_file is defined %}
+vsd_ejabberd_rpm_file: {{ upgrade.vsd_ejabberd_rpm_file | relative_path_to_absolute_path  }}
 {% endif %}
 
 {% if common.nuh_license_file is defined %}
-nuh_license_file: {{ common.nuh_license_file }}
+nuh_license_file: {{ common.nuh_license_file | relative_path_to_absolute_path  }}
+{% endif %}
+
+{% if common.vstat_license_file is defined %}
+vstat_license_file: {{ common.vstat_license_file | relative_path_to_absolute_path }}
 {% endif %}
 
 {% if zfb_nsg_list | length > 0 %}
@@ -324,10 +397,49 @@ portal3:
   mgmt_ip: {{ portals[2].mgmt_ip }}
   hostname: {{ portals[2].hostname }}
 
+{% if portal_grcn is defined and portal_grcn %}
+grcn1:
+  mgmt_ip: {{ portal_grcn[0].mgmt_ip }}
+  hostname: {{ portal_grcn[0].hostname }}
+  current_dc: {{ portal_grcn[0].current_dc }}
+  other_dc_portal1_ip: {{ portal_grcn[0].other_dc_portal1_ip }}
+  other_dc_portal2_ip: {{ portal_grcn[0].other_dc_portal2_ip }}
+  other_dc_portal3_ip: {{ portal_grcn[0].other_dc_portal3_ip }}
+  other_dc_grcn_ip: {{ portal_grcn[0].other_dc_grcn_ip }}
 {% endif %}
 
 {% endif %}
 
+{% endif %}
+
+{% if tpms is defined and tpms %}
+
+{% if tpms|length == 1 %}
+tpm1:
+  mgmt_ip: {{ tpms[0].mgmt_ip }}
+  hostname: {{ tpms[0].hostname }}
+  name: {{ tpms[0].hostname.split('.')[0] | lower }}
+
+{% else %}
+
+tpm1:
+  mgmt_ip: {{ tpms[0].mgmt_ip }}
+  hostname: {{ tpms[0].hostname }}
+  name: {{ tpms[0].hostname.split('.')[0] | lower }}
+
+tpm2:
+  mgmt_ip: {{ tpms[1].mgmt_ip }}
+  hostname: {{ tpms[1].hostname }}
+  name: {{ tpms[1].hostname.split('.')[0] | lower }}
+
+tpm3:
+  mgmt_ip: {{ tpms[2].mgmt_ip }}
+  hostname: {{ tpms[2].hostname }}
+  name: {{ tpms[2].hostname.split('.')[0] | lower }}
+
+{% endif %}
+
+{% endif %}
 
 #hooks section
 {% if common.hooks is defined %}
@@ -408,3 +520,5 @@ monit_alert_not_on: {{ common.vsd_monit_alert_not_on }}
 {% endif %}
 
 {{ plugin_group_vars | default("")}}
+
+vsd_continue_on_license_failure: {{ common.vsd_continue_on_license_failure | default(false) }}

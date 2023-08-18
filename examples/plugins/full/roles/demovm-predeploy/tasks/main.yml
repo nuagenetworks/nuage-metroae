@@ -1,0 +1,41 @@
+---
+- include_role:
+    name: skip-actions
+  vars:
+    - action: demovm_predeploy
+
+- include_role:
+    name: check-node-reachability
+
+- name: Get DEMOVM directory stat
+  stat:
+    path: /opt/nuage
+  remote_user: "{{ demovm_default_username }}"
+  register: demovm_dir
+  when: node_reachable
+
+- name: Set fact for DEMOVM present
+  set_fact:
+    demovm_present: "{{ demovm_dir is defined and
+                         demovm_dir.stat is defined and
+                         demovm_dir.stat.isdir is defined and
+                         demovm_dir.stat.isdir }}"
+
+- import_tasks: kvm.yml
+  when: target_server_type is match("kvm")
+  tags:
+    - demovm
+    - demovm-predeploy
+
+- import_tasks: vcenter.yml
+  when: target_server_type is match("vcenter")
+  static: no
+  tags:
+    - demovm
+    - demovm-predeploy
+
+- import_tasks: aws.yml
+  when: target_server_type is match("aws")
+  tags:
+    - demovm
+    - demovm-predeploy

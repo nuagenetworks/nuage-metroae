@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 if [[ $METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
     #################################################################################
@@ -8,7 +7,7 @@ if [[ $METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_M
     MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host'          'container'  'copy-ssh-id'            ',container,ssh,copyid')
 fi
 
-if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_MODE) || $RUN_MODE == $REPO_RUN_MODE ]]; then
+if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_MODE) || $RUN_MODE == $REPO_RUN_MODE || $RUN_MODE == $INSIDE_RUN_MODE ]]; then
     #################################################################################
     #                                Install COMMANDS                               #
     #################################################################################
@@ -20,6 +19,10 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',install,vsds,postdeploy'           'Post-deploy install step for Nuage VSDs'            'playbook'    'vsd_postdeploy'                               ',install,vsds')
     MENU+=(',install,vsds,standby,predeploy'    'Pre-deploy install step for standby Nuage VSDs'     'playbook'    'vsd_standby_predeploy'                        ',install,vsds')
     MENU+=(',install,vsds,standby,deploy'       'Deploy install step for standby Nuage VSDs'         'playbook'    'vsd_standby_deploy'                           ',install,vsds')
+    MENU+=(',install,vsd,stats'                 'Install Nuage Stats VSDs'                           'playbook'    'install_vsd_stats'                            ',install')
+    MENU+=(',install,vsd,stats,predeploy'       'Pre-deploy install step for Nuage Stats VSDs'       'playbook'    'vsd_stats_predeploy'                          ',install,vsd')
+    MENU+=(',install,vsd,stats,deploy'          'Deploy install step for Nuage Stats VSDs'           'playbook'    'vsd_stats_deploy'                             ',install,vsd')
+    MENU+=(',install,vsd,stats,postdeploy'      'Post-deploy install step for Nuage Stats VSDs'      'playbook'    'vsd_stats_postdeploy'                         ',install,vsd')
     MENU+=(',install,vscs'                      'Install Nuage VSCs'                                 'playbook'    'install_vscs'                                 ',install')
     MENU+=(',install,vscs,predeploy'            'Pre-deploy install step for Nuage VSCs'             'playbook'    'vsc_predeploy'                                ',install,vscs')
     MENU+=(',install,vscs,deploy'               'Deploy install step for Nuage VSCs'                 'playbook'    'vsc_deploy'                                   ',install,vscs')
@@ -31,7 +34,6 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',install,vstats,standby,predeploy'  'Pre-deploy step for standby Nuage VSTATs (ES)'      'playbook'    'vstat_standby_predeploy'                      ',install,vstats')
     MENU+=(',install,vstats,standby,deploy'     'Deploy install step for standby Nuage VSTATs (ES)'  'playbook'    'vstat_standby_deploy'                         ',install,vstats')
     MENU+=(',install,vns'                       'Install all Nuage VNS components'                   'playbook'    'install_vns'                                  ',install')
-    MENU+=(',install,vns,nuagex'                'Install Nuage VNS components on NuageX'             'playbook'    'install_vns_on_nuagex'                        ',install,vns')
     MENU+=(',install,vns,postdeploy'            'Post-deploy for Nuage VNS components'               'playbook'    'vsd_vns_postdeploy'                           ',install,vns')
     MENU+=(',install,vnsutils'                  'Install VNSUtils component'                         'playbook'    'install_vnsutils'                             ',install')
     MENU+=(',install,vnsutils,predeploy'        'Pre-deploy install step for VNSUtils'               'playbook'    'vnsutil_predeploy'                            ',install,vnsutils')
@@ -76,6 +78,10 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',install,webfilters'                'Install Webfilter VMs'                              'playbook'    'install_webfilters'                           ',install,webfilters')
     MENU+=(',install,webfilters,predeploy'      'Pre-deploy Webfilter VMs'                           'playbook'    'webfilter_predeploy'                          ',install,webfilters')
     MENU+=(',install,webfilters,deploy'         'Deploy Webfilter VMs'                               'playbook'    'webfilter_deploy'                             ',install,webfilters')
+    MENU+=(',install,tpms'                      'Install Threat Prevention Management (TPM) VMs'     'playbook'    'install_tpms'                                 ',install,tpms')
+    MENU+=(',install,tpms,predeploy'            'Pre-deploy TPM VMs'                                 'playbook'    'tpm_predeploy'                                ',install,tpms')
+    MENU+=(',install,tpms,deploy'               'Deploy TPM VMs'                                     'playbook'    'tpm_deploy'                                   ',install,tpms')
+    MENU+=(',install,nfss'                      'Configure NFS Servers (NFSs)'                       'playbook'    'configure_nfs_server'                         ',install')
 
     #################################################################################
     #                              Upgrade COMMANDS                                 #
@@ -85,12 +91,32 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',upgrade,beforevrs'                 'Upgrade steps before VRS upgrade'                   'playbook'    'upgrade_before_vrs'                           ',upgrade')
     MENU+=(',upgrade,aftervrs'                  'Upgrade steps after VRS upgrade'                    'playbook'    'upgrade_after_vrs'                            ',upgrade')
     MENU+=(',upgrade,vsds'                      'Upgrade Nuage VSDs - All VSD steps'                 'playbook'    'upgrade_vsds'                                 ',upgrade')
+    MENU+=(',upgrade,vsd,stats'                 'Upgrade Nuage Stats VSDs - All VSD steps'           'playbook'    'upgrade_vsd_stats'                            ',upgrade')
     MENU+=(',upgrade,vsds,inplace'              'Upgrade Nuage VSDs - inplace upgrade'               'playbook'    'upgrade_vsds_inplace'                         ',upgrade')
+    MENU+=(',upgrade,vsds,standby,inplace'      'Upgrade Nuage Standby VSDs - inplace upgrade'       'playbook'    'upgrade_standby_vsds_inplace'                 ',upgrade')
+    MENU+=(',upgrade,vcins,inplace'             'Upgrade Nuage VCINs - inplace upgrade'              'playbook'    'upgrade_vcins_inplace'                        ',upgrade')
+    MENU+=(',upgrade,vsd,stats,inplace'         'Upgrade Nuage Stats VSDs - inplace upgrade'         'playbook'    'upgrade_vsd_stats_inplace'                    ',upgrade')
     MENU+=(',upgrade,vscs'                      'Upgrade Nuage VSCs - All VSC steps'                 'playbook'    'upgrade_vscs'                                 ',upgrade')
     MENU+=(',upgrade,vscs,beforevrs'            'VSC upgrade steps before VRS upgrade'               'playbook'    'upgrade_vscs_before_vrs'                      ',upgrade,vscs')
     MENU+=(',upgrade,vscs,aftervrs'             'VSC upgrade steps after VRS upgrade'                'playbook'    'upgrade_vscs_after_vrs'                       ',upgrade,vscs')
     MENU+=(',upgrade,vstats'                    'Upgrade Nuage VSTATs (ES) - All VSTAT steps'        'playbook'    'upgrade_vstats'                               ',upgrade')
     MENU+=(',upgrade,vrss'                      'Upgrade Nuage VRSs'                                 'playbook'    'vrs_upgrade'                                  ',upgrade')
+    MENU+=(',upgrade,vcins'                     'Upgrade Nuage VCINs'                                'playbook'    'upgrade_vcins'                                ',upgrade')
+    MENU+=(',upgrade,nuhs'                      'Upgrade Nuage NUH HA or SA - All steps'             'playbook'    'upgrade_nuhs'                                 ',upgrade')
+    MENU+=(',upgrade,ha,nuhs,shutdown2'         'Stepwise NUH HA upgrade step - Shutdown NUH 2'      'playbook'    'nuh_upgrade_shutdown_2'                       ',upgrade')
+    MENU+=(',upgrade,ha,nuhs,predeploy2'        'Stepwise NUH HA upgrade step - Predeploy NUH 2'     'playbook'    'nuh_upgrade_predeploy_2'                      ',upgrade')
+    MENU+=(',upgrade,ha,nuhs,deploy2'           'Stepwise NUH HA upgrade step - Deploy NUH 2'        'playbook'    'nuh_upgrade_deploy_2'                         ',upgrade')
+    MENU+=(',upgrade,ha,nuhs,setup1'            'Stepwise NUH HA upgrade step - Setup NUH 1'         'playbook'    'nuh_upgrade_setup_1'                          ',upgrade')
+    MENU+=(',upgrade,ha,nuhs,configure1'        'Stepwise NUH HA upgrade step - Configure NUH 1'     'playbook'    'nuh_upgrade_configure_1'                      ',upgrade')
+    MENU+=(',upgrade,ha,nuhs,shutdown1'         'Stepwise NUH HA upgrade step - Shutdown NUH 1'      'playbook'    'nuh_upgrade_shutdown_1'                       ',upgrade')
+    MENU+=(',upgrade,ha,nuhs,predeploy1'        'Stepwise NUH HA upgrade step - Predeploy NUH 1'     'playbook'    'nuh_upgrade_predeploy_1'                      ',upgrade')
+    MENU+=(',upgrade,ha,nuhs,deploy1'           'Stepwise NUH HA upgrade step - Deploy NUH 1'        'playbook'    'nuh_upgrade_deploy_1'                         ',upgrade')
+    MENU+=(',upgrade,sa,nuhs,setup1'            'Stepwise NUH SA upgrade step - Setup NUH 1'         'playbook'    'nuh_upgrade_setup_1'                          ',upgrade')
+    MENU+=(',upgrade,sa,nuhs,configure1'        'Stepwise NUH SA upgrade step - Configure NUH 1'     'playbook'    'nuh_upgrade_configure_1'                      ',upgrade')
+    MENU+=(',upgrade,sa,nuhs,shutdown1'         'Stepwise NUH SA upgrade step - Shutdown NUH 1'      'playbook'    'nuh_upgrade_shutdown_1'                       ',upgrade')
+    MENU+=(',upgrade,sa,nuhs,predeploy1'        'Stepwise NUH SA upgrade step - Predeploy NUH 1'     'playbook'    'nuh_upgrade_predeploy_1'                      ',upgrade')
+    MENU+=(',upgrade,sa,nuhs,deploy1'           'Stepwise NUH SA upgrade step - Deploy NUH 1'        'playbook'    'nuh_upgrade_deploy_1'                         ',upgrade')
+    MENU+=(',upgrade,portals'                   'Upgrade Nuage SD-WAN Portals - All Portal steps'    'playbook'    'upgrade_sdwan_portals'                        ',upgrade')
     MENU+=(',upgrade,preupgrade,health'         'Run health checks before stepwise upgrade'          'playbook'    'vsp_preupgrade_health'                        ',upgrade,preupgrade')
     MENU+=(',upgrade,ha,vsd,dbbackup'           'Stepwise HA upgrade step - Backup VSD database'     'playbook'    'vsd_ha_upgrade_database_backup_and_decouple'  ',upgrade,ha')
     MENU+=(',upgrade,ha,vsd,shutdown23'         'Stepwise HA upgrade step - Shutdown VSD 2 & 3'      'playbook'    'vsd_ha_upgrade_shutdown_2_and_3'              ',upgrade,ha')
@@ -111,11 +137,22 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',upgrade,ha,vstat,prep'             'Stepwise HA upgrade step - Prepare VSTAT'           'playbook'    'vstat_upgrade_prep'                           ',upgrade,ha')
     MENU+=(',upgrade,ha,vstat,inplace'          'Stepwise HA upgrade step - Inplace upgrade VSTAT'   'playbook'    'vstat_upgrade'                                ',upgrade,ha')
     MENU+=(',upgrade,ha,vstat,wrapup'           'Stepwise HA upgrade step - Wrapup VSTAT'            'playbook'    'vstat_upgrade_wrapup'                         ',upgrade,ha')
+    MENU+=(',upgrade,ha,portal,dbbackup'        'Stepwise HA upgrade step - Backup Portal Database'  'playbook'    'sdwan_portal_database_backup'                 ',upgrade,ha')
+    MENU+=(',upgrade,portal,preupgrade,health'  'Stepwise HA upgrade step - Portal Health check'     'playbook'    'sdwan_portal_preupgrade_health'               ',upgrade,ha')
+    MENU+=(',upgrade,ha,portal,shudown23'       'Stepwise HA upgrade step - Shutdown Portals 2 & 3'  'playbook'    'sdwan_portal_ha_shutdown_2_and_3'                ',upgrade,ha')
+    MENU+=(',upgrade,ha,portal,shutdown1'       'Stepwise HA upgrade step - Shutdown Portal 1'       'playbook'    'sdwan_portal_ha_shutdown_1'                      ',upgrade,ha')
+    MENU+=(',upgrade,ha,portal,deploy'          'Stepwise HA upgrade step - Deploy new Portals'      'playbook'    'sdwan_portal_deploy'                          ',upgrade,ha')
+    MENU+=(',upgrade,ha,portal,complete'        'Stepwise HA upgrade step - Postupgrade checks'      'playbook'    'sdwan_portal_upgrade_complete'                ',upgrade,ha')
     MENU+=(',upgrade,sa,vsd,dbbackup'           'Stepwise SA upgrade step - Backup VSD database'     'playbook'    'vsd_sa_upgrade_database_backup'               ',upgrade,sa')
     MENU+=(',upgrade,sa,vsd,shutdown'           'Stepwise SA upgrade step - Shutdown VSD'            'playbook'    'vsd_sa_upgrade_shutdown'                      ',upgrade,sa')
     MENU+=(',upgrade,sa,vsd,predeploy'          'Stepwise SA upgrade step - Predeploy new VSD'       'playbook'    'vsd_sa_upgrade_predeploy'                     ',upgrade,sa')
     MENU+=(',upgrade,sa,vsd,deploy'             'Stepwise SA upgrade step - Deploy new VSD'          'playbook'    'vsd_sa_upgrade_deploy'                        ',upgrade,sa')
     MENU+=(',upgrade,sa,vsd,complete'           'Stepwise SA upgrade step - Mark VSD complete'       'playbook'    'vsd_upgrade_complete'                         ',upgrade,sa')
+    MENU+=(',upgrade,sa,vcin,dbbackup'          'Stepwise SA upgrade step - Backup VCIN database'    'playbook'    'vcin_sa_upgrade_database_backup'              ',upgrade,sa')
+    MENU+=(',upgrade,sa,vcin,shutdown'          'Stepwise SA upgrade step - Shutdown VCIN'           'playbook'    'vcin_sa_upgrade_shutdown'                     ',upgrade,sa')
+    MENU+=(',upgrade,sa,vcin,predeploy'         'Stepwise SA upgrade step - Predeploy new VCIN'      'playbook'    'vcin_sa_upgrade_predeploy'                    ',upgrade,sa')
+    MENU+=(',upgrade,sa,vcin,deploy'            'Stepwise SA upgrade step - Deploy new VCIN'         'playbook'    'vcin_sa_upgrade_deploy'                       ',upgrade,sa')
+    MENU+=(',upgrade,sa,vcin,complete'          'Stepwise SA upgrade step - Mark VCIN complete'      'playbook'    'vcin_upgrade_complete'                        ',upgrade,sa')
     MENU+=(',upgrade,sa,vsc,health'             'Stepwise SA upgrade step - Health check VSC'        'playbook'    'vsc_health'                                   ',upgrade,sa')
     MENU+=(',upgrade,sa,vsc,backup'             'Stepwise SA upgrade step - Backup and prep VSC'     'playbook'    'vsc_sa_upgrade_backup_and_prep'               ',upgrade,sa')
     MENU+=(',upgrade,sa,vsc,deploy'             'Stepwise SA upgrade step - Deploy new VSC'          'playbook'    'vsc_sa_upgrade_deploy'                        ',upgrade,sa')
@@ -124,8 +161,20 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',upgrade,sa,vstat,prep'             'Stepwise SA upgrade step - Prepare VSTAT'           'playbook'    'vstat_upgrade_prep'                           ',upgrade,sa')
     MENU+=(',upgrade,sa,vstat,inplace'          'Stepwise SA upgrade step - Inplace upgrade VSTAT'   'playbook'    'vstat_upgrade'                                ',upgrade,sa')
     MENU+=(',upgrade,sa,vstat,wrapup'           'Stepwise SA upgrade step - Wrapup VSTAT'            'playbook'    'vstat_upgrade_wrapup'                         ',upgrade,sa')
+    MENU+=(',upgrade,sa,portal,dbbackup'        'Stepwise SA upgrade step - Backup Portal database'  'playbook'    'sdwan_portal_database_backup'                 ',upgrade,sa')
+    MENU+=(',upgrade,portal,preupgrade,health'  'Stepwise SA upgrade step - Portal health check'     'playbook'    'sdwan_portal_preupgrade_health'               ',upgrade,sa')
+    MENU+=(',upgrade,sa,portal,shutdown'        'Stepwise SA upgrade step - Shutdown Portal node'    'playbook'    'sdwan_portal_sa_shutdown'                     ',upgrade,sa')
+    MENU+=(',upgrade,sa,portal,deploy'          'Stepwise SA upgrade step - Deploy new Portal node'  'playbook'    'sdwan_portal_deploy'                          ',upgrade,sa')
+    MENU+=(',upgrade,sa,portal,complete'        'Stepwise SA upgrade step - Postupgrade checks'      'playbook'    'sdwan_portal_upgrade_complete'                ',upgrade,sa')
+    MENU+=(',upgrade,vsd,stats,predeploy'       'Stepwise VSD Stats upgrade - Predeploy new VSD'     'playbook'    'vsd_stats_upgrade_predeploy'                  ',upgrade,vsd')
+    MENU+=(',upgrade,vsd,stats,deploy'          'Stepwise VSD Stats upgrade - Deploy new VSD'        'playbook'    'vsd_stats_upgrade_deploy'                     ',upgrade,vsd')
+    MENU+=(',upgrade,vsd,stats,destroy'         'Stepwise VSD Stats upgrade - Destroy old VSD'       'playbook'    'vsd_stats_upgrade_destroy'                    ',upgrade,vsd')
     MENU+=(',upgrade,postdeploy'                'Final steps of stepwise upgrade'                    'playbook'    'vsp_upgrade_postdeploy'                       ',upgrade,')
     MENU+=(',upgrade,postupgrade,health'        'Run health checks after stepwise upgrade'           'playbook'    'vsp_postupgrade_health'                       ',upgrade,postupgrade')
+    MENU+=(',upgrade,destroy,old,nuh1'          'Destroy SA or HA old preupgrade NUH 1 VM'           'playbook'    'nuh_upgrade_destroy_old_1'                 ',upgrade,destroy')
+    MENU+=(',upgrade,destroy,old,nuh2'          'Destroy HA old preupgrade NUH 2 VM'                 'playbook'    'nuh_upgrade_destroy_old_2'                 ',upgrade,destroy')
+    MENU+=(',upgrade,destroy,new,nuh1'          'Destroy SA or HA upgraded NUH 1 VM'                 'playbook'    'nuh_upgrade_destroy_new_1'                 ',upgrade,destroy')
+    MENU+=(',upgrade,destroy,new,nuh2'          'Destroy HA upgraded NUH 2 VM'                       'playbook'    'nuh_upgrade_destroy_new_2'                 ',upgrade,destroy')
     MENU+=(',upgrade,destroy,ha,vsd23'          'Destroy HA upgrade VSD 2 & 3 VMs'                   'playbook'    'vsd_ha_upgrade_destroy_2_and_3'               ',upgrade,destroy')
     MENU+=(',upgrade,destroy,ha,vsd1'           'Destroy HA upgrade VSD 1 VM'                        'playbook'    'vsd_ha_upgrade_destroy_1'                     ',upgrade,destroy')
     MENU+=(',upgrade,destroy,sa,vsd'            'Destroy SA upgrade VSD VM'                          'playbook'    'vsd_sa_upgrade_destroy'                       ',upgrade,destroy')
@@ -136,12 +185,13 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     #                               Health COMMANDS                                 #
     #################################################################################
     MENU+=(',health'                           'Run health checks for Nuage components'              'playbook'    'nuage_health'                                 '')
-    MENU+=(',health,vsds'                      'Run heath check Nuage VSDs'                          'playbook'    'vsd_health'                                   ',health')
-    MENU+=(',health,vscs'                      'Run heath check Nuage VSCs'                          'playbook'    'vsc_health'                                   ',health')
-    MENU+=(',health,vstats'                    'Run heath check Nuage VSTATs'                        'playbook'    'vstat_health'                                 ',health')
-    MENU+=(',health,vrss'                      'Run heath check Nuage VRSs'                          'playbook'    'vrss_health'                                  ',health')
-    MENU+=(',health,vcins'                     'Run heath check vCenter Integration Nodes (VCINs)'   'playbook'    'vcin_health'                                  ',health')
+    MENU+=(',health,vsds'                      'Run health check Nuage VSDs'                         'playbook'    'vsd_health'                                   ',health')
+    MENU+=(',health,vscs'                      'Run health check Nuage VSCs'                         'playbook'    'vsc_health'                                   ',health')
+    MENU+=(',health,vstats'                    'Run health check Nuage VSTATs'                       'playbook'    'vstat_health'                                 ',health')
+    MENU+=(',health,vrss'                      'Run health check Nuage VRSs'                         'playbook'    'vrss_health'                                  ',health')
+    MENU+=(',health,vcins'                     'Run health check vCenter Integration Nodes (VCINs)'  'playbook'    'vcin_health'                                  ',health')
     MENU+=(',health,monitoring,setup'          'Sets up health monitoring agents on components'      'playbook'    'setup_health_monitoring'                      ',health,monitoring')
+    MENU+=(',health,portals'                   'Run health check for Nuage SD-WAN Portals'           'playbook'    'sdwan_portal_health'                          ',health')
 
     #################################################################################
     #                              Destroy COMMANDS                                 #
@@ -149,6 +199,9 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',destroy'                          'Destroy Nuage components'                            'playbook'    'destroy_everything'                           '')
     MENU+=(',destroy,everything'               'Destroys all running Nuage components'               'playbook'    'destroy_everything'                           ',destroy')
     MENU+=(',destroy,vsds'                     'Destroy Nuage VSDs'                                  'playbook'    'vsd_destroy'                                  ',destroy')
+    MENU+=(',destroy,vsds,new'                 'Destroy New Nuage VSDs'                              'playbook'    'vsd_upgrade_destroy_new'                      ',destroy')
+    MENU+=(',destroy,vsds,old'                 'Destroy Old Nuage VSDs'                              'playbook'    'vsd_upgrade_destroy_old'                      ',destroy')
+    MENU+=(',destroy,vsds,everything'          'Destroy Everything Nuage VSDs'                       'playbook'    'vsd_upgrade_destroy_everything'               ',destroy')
     MENU+=(',destroy,vscs'                     'Destroy Nuage VSCs'                                  'playbook'    'vsc_destroy'                                  ',destroy')
     MENU+=(',destroy,vstats'                   'Destroy Nuage VSTATs (ES)'                           'playbook'    'vstat_destroy'                                ',destroy')
     MENU+=(',destroy,vnsutils'                 'Destroy Nuage VNSUtils'                              'playbook'    'vnsutil_destroy'                              ',destroy')
@@ -157,6 +210,8 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',destroy,vrss'                     'Destroy Nuage VRSs'                                  'playbook'    'vrs_destroy'                                  ',destroy')
     MENU+=(',destroy,vcins'                    'Destroy vCenter Integration Nodes (VCINs)'           'playbook'    'vcin_destroy'                                 ',destroy')
     MENU+=(',destroy,portal'                   'Destroy SDWAN portal'                                'playbook'    'sdwan_portal_destroy'                         ',destroy')
+    MENU+=(',destroy,webfilters'               'Destroy Webfilter VMs'                               'playbook'    'webfilter_destroy'                            ',destroy')
+    MENU+=(',destroy,tpms'                     'Destroy Threat Prevention Management (TPM) VMs'      'playbook'    'tpm_destroy'                                  ',destroy')
     MENU+=(',destroy,vsrs'                     'Destroy Virtualized Service Routers (VSRs)'          'playbook'    'vsr_destroy'                                  ',destroy')
     MENU+=(',destroy,dns'                      'Destroy DNS servers'                                 'playbook'    'dns_destroy'                                  ',destroy')
 
@@ -167,6 +222,7 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',backup,everything'               'Backup all Nuage components'                          'playbook'    'backup_everything'                            'backup')
     MENU+=(',backup,vsds'                     'Backup Nuage VSDs'                                    'playbook'    'vsd_backup'                                   'backup')
     MENU+=(',backup,vscs'                     'Backup Nuage VSCs'                                    'playbook'    'vsc_backup'                                   'backup')
+    MENU+=(',backup,vsd,stats'                'Backup Nuage VSD Stats'                               'playbook'    'vsd_stats_backup'                             'backup')
     MENU+=(',restore'                         'Restore Nuage components from backup'                 'playbook'    'restore_everything'                           'restore')
     MENU+=(',restore,everything'              'Restore all Nuage components from backup'             'playbook'    'restore_everything'                           'restore')
     MENU+=(',restore,vsds'                    'Restore Nuage VSDs from backup'                       'playbook'    'vsd_restore'                                  'restore')
@@ -177,6 +233,7 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',restore,vscs,predeploy'          'Restore the VSCs from backup predeploy step'          'playbook'    'vsc_restore_predeploy'                        'restore,vscs')
     MENU+=(',restore,vscs,deploy'             'Restore the VSCs from backup deploy step'             'playbook'    'vsc_restore_deploy'                           'restore,vscs')
     MENU+=(',restore,vscs,postdeploy'         'Restore the VSCs from backup postdeploy step'         'playbook'    'vsc_postdeploy'                               'restore,vscs')
+    MENU+=(',restore,vsd,stats'               'Restore Nuage Stats VSDs from backup'                 'playbook'    'vsd_stats_restore'                            'restore,vsd')
 
     #################################################################################
     #                                 VSD COMMANDS                                  #
@@ -194,7 +251,8 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',vsd,test,rtt'                     'Run RTT tests on VSDs'                               'playbook'    'vsd_test_rtt'                                 ',vsd')
     MENU+=(',vsd,test,disk'                    'Test disk peformance on VSDs'                        'playbook'    'vsd_disk_performance_test'                    ',vsd')
     MENU+=(',vsd,yum,update'                   'Run yum update for VSDs'                             'playbook'    'vsd_yum_update'                               ',vsd')
-
+    MENU+=(',vsd,copy,sshid'                   'Copy SSH Public Key to VSD'                          'playbook'    'copy_sshid_vsd'                               ',vsd')
+    MENU+=(',vsd,security,hardening'           'Run security hardening on VSDs'                      'playbook'    'vsd_security_hardening'                       ',vsd')
     #################################################################################
     #                                 VSC COMMANDS                                  #
     #################################################################################
@@ -209,6 +267,15 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',vstat,failover'                   'Initiates a failover to secondary VSTATs'            'playbook'    'vstat_failover'                               ',vstat')
     MENU+=(',vstat,failback'                   'Initiates a failback to primary VSTATs'              'playbook'    'vstat_failback'                               ',vstat')
     MENU+=(',vstat,yum,update'                 'Run yum update for vstat'                            'playbook'    'vstat_yum_update'                             ',vstat')
+    MENU+=(',vstat,copy,sshid'                 'Copy SSH Public Key to VSTAT'                        'playbook'    'copy_sshid_vstat'                             ',vstat')
+    MENU+=(',vstat,security,hardening'         'Harden the VSTAT for security'                       'playbook'    'vstat_security_hardening'                     ',vstat')
+    MENU+=(',vstat,update,license'             'Update the license on VSTAT'                         'playbook'    'vstat_update_license'                         ',vstat')
+
+    #################################################################################
+    #                                NUH COMMANDS                                 #
+    #################################################################################
+    MENU+=(',nuh,copy,sshid'                 'Copy SSH Public Key to nuh'                        'playbook'    'copy_sshid_nuh'                             ',nuh')
+    MENU+=(',nuh,generate,certificates'      'Generate NUH certificates after VSD installation'  'playbook'    'generate_nuh_certificates'                  ',nuh')
 
     #################################################################################
     #                                Tools COMMANDS                                 #
@@ -218,10 +285,12 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',tools,build,reset'                'Clear the inventory'                                 'playbook'    'reset_build'                                  ',tools')
     MENU+=(',tools,collect,debugs'             'Collect debug information for troubleshooting'       'tools'       'get_debug'                                    ',tools')
     MENU+=(',tools,convert,csv'                'Convert spreadsheet (CSV) to deployment'             'tools'       'convert_csv_to_deployment'                    ',tools')
+    MENU+=(',tools,convert,excel'              'Convert spreadsheet (Excel) to deployment'           'tools'       'convert_excel_to_deployment'                  ',tools')
     MENU+=(',tools,copy,qcow'                  'Copy qcow2 images to target server'                  'playbook'    'copy_qcow2_files'                             ',tools')
     MENU+=(',tools,encrypt,credentials'        'Encrypt credentials.yml in your deployment'          'tools'       'encrypt-credentials'                          ',tools')
     MENU+=(',tools,generate,example'           'Generate a deployment file from its schema'          'tools'       'generate-example-from-schema'                 ',tools')
     MENU+=(',tools,unzip,images'               'Unzip Nuage images'                                  'tools'       'unzip-files'                                  ',tools')
+    MENU+=(',tools,copy,sshid'                 'Copy SSH Public Key to all components'               'tools'       'copy_sshid_all_components'                    ',tools')
 
     #################################################################################
     #                                Setup                                          #
@@ -235,6 +304,7 @@ if [[ ($METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE && $RUN_MODE == $CONTAINER_RUN_
     MENU+=(',plugin,install'                'Install MetroAE plugin'                                 'plugin'      'install'                                      ',plugin')
     MENU+=(',plugin,uninstall'              'Uninstall MetroAE plugin'                               'plugin'      'uninstall'                                    ',plugin')
     MENU+=(',plugin,validate'               'Validate MetroAE plugin'                                'plugin'      'validate'                                     ',plugin')
+    MENU+=(',plugin,list'                   'List the installed MetroAE plugin'                      'plugin'      'list'                                         ',plugin')
 
 
     #################################################################################

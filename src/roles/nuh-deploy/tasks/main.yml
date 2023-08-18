@@ -15,17 +15,40 @@
     ssh_host: "{{ hostname }}"
     host_username: "root"
 
+- import_tasks: openstack.yml
+  when: target_server_type is match("openstack")
+
+- name: Check if ha proxy is running (ignoring errors)
+  command: systemctl status haproxy
+  ignore_errors: true
+  register: haproxy_output
+  remote_user: "{{ nuh_default_username }}"
+
+- name: Define skip nuh installation
+  set_fact:
+    skip_nuh_deploy: "{{ haproxy_output.stdout.find('active (running)') != -1 }}"
+
+- name: Display if skipping NUH deploy
+  debug:
+    msg:
+      - "*************************************************"
+      - "Skipping NUH deploy because it is already running"
+      - "*************************************************"
+  when: skip_nuh_deploy
+
 - block:
 
-  - name: Install NTP package on the NUH vm
-    yum: name=ntp state=present
+  - block:
 
-  - name: Configure ntpd and ntpdate and local time zone
-    include_role:
-      name: common
-      tasks_from: linux-ntp-sync
-    vars:
-      rem_user: "{{ nuh_default_username }}"
+    - name: Copy license file
+      copy:
+        src: "{{ nuh_license_file }}"
+        dest: "/opt/proxy/nuh.license"
+
+    - name: Verify License is valid
+      shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
+
+    when: nuh_license_file is defined
 
   - name: Run the setup script for SA
     command: ./setup.sh
@@ -42,13 +65,13 @@
       HNAME: "{{ hostname }}"
       HA: "y"
       MASTER: "y"
-      PEERADDR: "{{ groups['nuhs'][1] }}"
+      PEERADDR: "{{ groups['nuh_second_node'][0] }}"
       PEERPASSWORD: "{{ nuh_default_password }}"
     args:
       chdir: /opt/proxy/bin
     when:
       - nuh_sa_or_ha is match('ha')
-      - inventory_hostname == groups['nuhs'][0]
+      - inventory_hostname == groups['nuh_first_node'][0] 
 
   - name: Run the setup script for HA secondary
     command: ./setup.sh
@@ -56,95 +79,75 @@
       HNAME: "{{ hostname }}"
       HA: "y"
       MASTER: "n"
-      PEERADDR: "{{ groups['nuhs'][0] }}"
+      PEERADDR: "{{ groups['nuh_first_node'][0] }}"
       PEERPASSWORD: "{{ nuh_default_password }}"
     args:
       chdir: /opt/proxy/bin
     when:
       - nuh_sa_or_ha is match('ha')
-      - inventory_hostname == groups['nuhs'][1]
+      - inventory_hostname == groups['nuh_second_node'][0] 
 
   - name: Set the timezone
     command: timedatectl set-timezone {{ nuh_timezone }}
 
-  - name: Disable chrony on NUH
-    systemd:
-      name: "chronyd"
-      enabled: no
-      state: stopped
+  - name: Create NUH users and generate certificates
+    import_role:
+      name: nuh-deploy
+      tasks_from: nuh_create_users_certs.yml
+    when:
+      - internal_ip is defined
+      - not skip_vsd_installed_check
 
-  - block:
-
-    - name: Get vsd node(s) information
-      import_role:
-        name: common
-        tasks_from: vsd-node-info.yml
-      vars:
-        vsd_hostname: "{{ vsd_fqdn }}"
-
-    - name: Copy the network config for NUH internal and external networks
-      template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
-
-    - name: Run the network config script on NUH
-      command: ansible-playbook configure.yml
-      args:
-        chdir: /opt/proxy/bin/ansible
-
-    - name: Check if the eth1 is configured on Internal interface
-      shell: ip netns exec Internal ip addr list | grep eth1
-
-    - name: Check if the eth2 is configured on External interfaces
-      shell: ip netns exec {{ item.name }} ip addr list | grep eth2
-      with_items: "{{ external_interfaces }}"
-      when: external_interfaces is defined and external_interfaces | length > 0
-
-    when: 
+  - name: Copy NUH certificates 
+    import_role:
+      name: nuh-deploy
+      tasks_from: nuh_copy_certificates.yml
+    when:
       - internal_ip is defined
       - not skip_vsd_installed_check
 
   - block:
 
-      - name: Copy the Custom configuration file if provided by user
-        copy:
-          dest: "/opt/proxy/data/config.yml"
-          src: "{{ custom_configuration_file_location }}"
-          mode: 0640
-          owner: "root"
-          group: "root"
-
-      - name: Run the configuration script on NUH
-        command: ansible-playbook configure.yml
-        args:
-          chdir: /opt/proxy/bin/ansible
-
-    when: custom_configuration_file_location is defined
-
-  - block:
-
-    - name: Copy license file
+    - name: Copy the Custom configuration file if provided by user
       copy:
-        src: "{{ nuh_license_file }}"
-        dest: "/opt/proxy/nuh.license"
+        dest: "/opt/proxy/data/config.yml"
+        src: "{{ custom_configuration_file_location }}"
+        mode: 0640
+        owner: "root"
+        group: "root"
+      when: custom_configuration_file_location is defined
 
-    - name: Verify License is valid
-      shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
+    - block:
 
-    when: nuh_license_file is defined
+      - name: Add stats-out proxy entries to NUH configuration
+        replace:
+          path: /opt/proxy/data/config.yml
+          regexp: "role: vsdconfig.*$"
+          replace: "role: vsdconfig, enabled: true, firewallports: ['{{ stats_out_proxy_ui_port }}', '{{ stats_out_proxy_api_port }}', '{{ stats_out_proxy_jms_port }}', '{{ stats_out_proxy_xmpp_port }}', '{{ stats_out_proxy_cert_port }}'], settings: {uiport: '{{ stats_out_proxy_ui_port }}', apiport: '{{ stats_out_proxy_api_port }}', xmppport: '{{ stats_out_proxy_xmpp_port }}', jmsport: '{{ stats_out_proxy_jms_port }}', geo: false, certport: '{{ stats_out_proxy_cert_port }}'}}"
 
-  - name: Create and transfer certs
-    include_role:
-      name: common
-      tasks_from: vsd-generate-transfer-certificates
-    when: not skip_vsd_installed_check
-    vars:
-      certificate_password: "{{ nuh_default_password }}"
-      certificate_username: "{{ inventory_hostname }}"
-      commonName: "{{ inventory_hostname }}"
-      certificate_type: server
-      scp_user: "root"
-      scp_location: /opt/proxy/data/certs
-      additional_parameters:  -d {{ inventory_hostname }}
+      - name: Add stats-out proxy entries to NUH configuration
+        blockinfile:
+          path: /opt/proxy/data/config.yml
+          marker: ""
+          block: |
+            nsgstats:
+              {% for stats_only_vsds in groups['stats_only_vsds'] | list %}
+              - {{ hostvars[stats_only_vsds]['mgmt_ip'] }}
+              {% endfor %}
 
+      when: stats_out_proxy | default('NONE') == internal_ip | default("not_set")
+
+    - name: Run the configuration script on NUH
+      command: ansible-playbook configure.yml
+      args:
+        chdir: /opt/proxy/bin/ansible
+
+    when:
+      - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') == internal_ip | default("not_set")
+      - inventory_hostname == groups['nuh_first_node'][0] 
+
+  when:
+    - not skip_nuh_deploy
   remote_user: "{{ nuh_default_username }}"
 
 - name: Setup health monitoring
@@ -153,4 +156,3 @@
   vars:
     component_username: "{{ nuh_default_username }}"
   when: health_monitoring_agent | default("none") != "none"
-

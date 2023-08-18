@@ -1,3 +1,12 @@
+- name: Get custom username for vsd
+  set_fact:
+    primary_custom_username: "{{ hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    primary_custom_password: "{{ hostvars[vsd].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  when:
+    - hostvars[vsd].vsd_custom_username is defined or vsd_custom_username is defined
+    - not stats_out_node | default (False)
+
 - block:
 
   - include_role:
@@ -9,73 +18,137 @@
       tasks_from: get-vsd-build
 
   - name: Clear existing stats
-    command: /opt/vsd/vsd-stats.sh -d
+    command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -d"
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when: clear_stats | default(false)
 
   - name: Enable stats collection on standalone vsd when vstat is standalone
-    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}"
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when:
       - vsd_sa_or_ha is match('sa')
       - vstat_sa_or_ha is match('sa')
 
   - name: Enable stats collection on the cluster vsds when vstat is standalone
-    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}"
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when:
       - vsd_sa_or_ha is match('ha')
       - vstat_sa_or_ha is match('sa')
 
-  - name: Enable stats collection on the vsd(s) when vstat is clustered
-    command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-    environment:
-      VSD_VERSION: "{{ vsd_version.stdout }}"
-      VSD_BUILD: "{{ vsd_build.stdout }}"
-    when:
-      - vstat_sa_or_ha is match('ha')
-      - groups['vstats'] is defined
+  - block:
 
-  - name: Enable stats collection on the vsd(s) on primary vstats
-    command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
-    environment:
-      VSD_VERSION: "{{ vsd_version.stdout }}"
-      VSD_BUILD: "{{ vsd_build.stdout }}"
-    when:
-      - vstat_sa_or_ha is match('ha')
-      - groups['primary_vstats'] is defined
-      - active and not failover
+    - name: Enable stats collection on the vsd(s) when vstat is clustered
+      command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}"
+      environment:
+        VSD_VERSION: "{{ vsd_version.stdout }}"
+        VSD_BUILD: "{{ vsd_build.stdout }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      when:
+        - vstat_sa_or_ha is match('ha')
+        - groups['vstats'] is defined
 
-  - name: Enable stats collection on the vsd(s) for backup vstats in failover
-    command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
-    environment:
-      VSD_VERSION: "{{ vsd_version.stdout }}"
-      VSD_BUILD: "{{ vsd_build.stdout }}"
+    - name: Enable stats collection on the vsd(s) on primary vstats
+      command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}"
+      environment:
+        VSD_VERSION: "{{ vsd_version.stdout }}"
+        VSD_BUILD: "{{ vsd_build.stdout }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      when:
+        - vstat_sa_or_ha is match('ha')
+        - groups['primary_vstats'] is defined
+        - active and not failover
+
+    - name: Enable stats collection on the vsd(s) for backup vstats in failover
+      command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}"
+      environment:
+        VSD_VERSION: "{{ vsd_version.stdout }}"
+        VSD_BUILD: "{{ vsd_build.stdout }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      when:
+        - vstat_sa_or_ha is match('ha')
+        - groups['backup_vstats'] is defined
+        - active and failover
+
+    when: not stats_out | default(false)
+
+  - block:
+
+    - block:
+
+      - name: Enable stats collection on the stats vsd(s) when deploying stats-out
+        command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }} -s {{ stats_out_proxy }}"
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+        environment:
+          VSD_VERSION: "{{ vsd_version.stdout }}"
+          VSD_BUILD: "{{ vsd_build.stdout }}"
+        when: groups['add_data_vstats'] is not defined
+
+      - name: Enable stats collection on the stats vsd(s) when deploying stats-out
+        command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }},{{ groups['add_data_vstats'][0] }},{{ groups['add_data_vstats'][1] }},{{ groups['add_data_vstats'][2] }} -s {{ stats_out_proxy }}"
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+        environment:
+          VSD_VERSION: "{{ vsd_version.stdout }}"
+          VSD_BUILD: "{{ vsd_build.stdout }}"
+        when: groups['add_data_vstats'] is defined
+
+      - name: wait for elasticsearch service to become running
+        monit_waitfor_service:
+          name: "elasticsearch-status"
+          timeout_seconds: 1200
+          test_interval_seconds: 30
+
+      - name: Upgrade stats vsds
+        include_role:
+          name: vsd-upgrade-inplace
+          tasks_from: main.yml
+        when: vsd_install_inplace_upgrade | default (False)
+
+      - name: Verify port 39039 is open for listening in stats-out deployment
+        shell: lsof -i:39090 | grep LISTEN
+
+      when: vsd in groups['stats_only_vsds']
+
+    - name: Enable statistics flag on the primary vsd(s) when deploying stats-out
+      command: >-
+        {{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+        -v {{ hostvars[groups['stats_only_vsds'][0]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][1]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][2]]['mgmt_ip'] }}
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      environment:
+        VSD_VERSION: "{{ vsd_version.stdout }}"
+        VSD_BUILD: "{{ vsd_build.stdout }}"
+      when: vsd not in groups['stats_only_vsds']
+
     when:
       - vstat_sa_or_ha is match('ha')
-      - groups['backup_vstats'] is defined
-      - active and failover
+      - groups['data_vstats'] is defined
+      - stats_out | default(false)
 
   delegate_to: "{{ vsd }}"
-  remote_user: "{{ hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-  become: "{{ 'no' if hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  remote_user: "{{ primary_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if primary_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ hostvars[vsd].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+    ansible_become_pass: "{{ primary_custom_password | default(vsd_default_password) }}"
 
 - name: Get jboss status of all VSDs
   command: monit status jboss
   register: jboss_status
-  remote_user: "{{ hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-  become: "{{ 'no' if hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
-  delegate_to: "{{ item }}"
+    ansible_become_pass: "{{ hostvars[vsd].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+  delegate_to: "{{ vsd }}"
+  loop_control:
+    loop_var: vsd
   with_items: "{{ vsd_hostname_list }}"
   changed_when: False
 

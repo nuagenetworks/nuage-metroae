@@ -140,6 +140,28 @@ dns_server_list: [ {% for i in dns_server_list | default([]) %}"{{ i }}", {% end
 
 ######################
 
+##### Stats Out
+
+# < Statistics Out Deployment >
+# Set the deployment for stats-out.  At this time, only exactly 3 clustered VSDs and exactly 3 stats VSDs are supported.  The first 3 VSDs specified are clustered and the remaining are marked statistics only
+#
+{%- if stats_out is defined %}
+stats_out: {{ stats_out | lower }}
+{%- else %}
+# stats_out: False
+{%- endif %}
+
+# < Statistics Out Proxy Address >
+# Set the proxy address for a stats-out deployment.  If unspecified the first NUH to be deployed will be used as the proxy.  If there are no NUHs being deployed, an alternative proxy address must be specified.
+#
+{%- if stats_out_proxy is defined %}
+stats_out_proxy: "{{ stats_out_proxy }}"
+{%- else %}
+# stats_out_proxy: (first NUH hostname)
+{%- endif %}
+
+###############
+
 ##### Options
 
 # < Timezone >
@@ -170,7 +192,7 @@ vsd_run_cluster_rtt_test: {{ vsd_run_cluster_rtt_test | lower }}
 {%- endif %}
 
 # < Ignore RTT Test Errors >
-# When true, do not validate the RTT between VSDs in a cluster is less than max RTT
+# When true, continue MetroAE execution upon error and do not validate the RTT between VSDs in a cluster is less than max RTT, else stop MetroAE execution upon error
 #
 {%- if vsd_ignore_errors_rtt_test is defined %}
 vsd_ignore_errors_rtt_test: {{ vsd_ignore_errors_rtt_test | lower }}
@@ -233,7 +255,7 @@ vsd_disk_performance_test_max_time: "{{ vsd_disk_performance_test_max_time }}"
 {%- endif %}
 
 # < Ignore Disk Performance Test Errors >
-# When true, ignore the results of the VSD disk performance test
+# When true, continue MetroAE execution upon error and ignore the results of the VSD disk performance test, else stop MetroAE execution upon error
 #
 {%- if vsd_ignore_disk_performance_test_errors is defined %}
 vsd_ignore_disk_performance_test_errors: {{ vsd_ignore_disk_performance_test_errors | lower }}
@@ -343,6 +365,18 @@ vcenter_vmfolder: "{{ vcenter_vmfolder }}"
 {%- else %}
 # vcenter_vmfolder: ""
 {%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+# < vCenter Hosts and Clusters Folder >
+# Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+#
+{%- if vcenter_host_clusters_folder is defined %}
+vcenter_host_clusters_folder: "{{ vcenter_host_clusters_folder }}"
+{%- else %}
+# vcenter_host_clusters_folder: ""
+{%- endif %}
 
 ############################
 {%- endif %}
@@ -447,6 +481,18 @@ openstack_cacert: "{{ openstack_cacert }}"
 {%- else %}
 # openstack_cacert: ""
 {%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+# < VSC Trunking >
+# This enables trunking between vsc control port and its underlay ports (openstack_external_port1_name, openstack_external_port2_name,openstack_external_port3_name) as defined under vscs.yml
+#
+{%- if vsc_trunking is defined %}
+vsc_trunking: {{ vsc_trunking | lower }}
+{%- else %}
+# vsc_trunking: False
+{%- endif %}
 
 ###############
 {%- endif %}
@@ -474,6 +520,16 @@ xmpp_tls: {{ xmpp_tls | lower }}
 # xmpp_tls: True
 {%- endif %}
 
+# < Set XMPP TLS mode require or allow >
+# Set XMPP TLS mode require or allow
+# (allow, require) 
+#
+{%- if xmpp_tls_mode is defined %}
+xmpp_tls_mode: "{{ xmpp_tls_mode }}"
+{%- else %}
+# xmpp_tls_mode: ""
+{%- endif %}
+
 # < OpenFlow TLS >
 # Flag to indicate when secure communications via TLS will be used between VSCs and data plane components, e.g. VRS or NSGv; If VRS is defined, target_server_password must be defined in credentials.yml
 #
@@ -488,7 +544,7 @@ openflow_tls: {{ openflow_tls | lower }}
 ##### Licenses
 
 # < VSD Standard License File >
-# Path to the standard license file for the VSD
+# Path to the standard license file for the VSD including the file name
 #
 {%- if vsd_license_file is defined %}
 vsd_license_file: "{{ vsd_license_file }}"
@@ -497,7 +553,7 @@ vsd_license_file: "{{ vsd_license_file }}"
 {%- endif %}
 
 # < VSD Cluster License File >
-# Path to the cluster license file for the VSD
+# Path to the cluster license file for the VSD including the file name
 #
 {%- if vsd_cluster_license_file is defined %}
 vsd_cluster_license_file: "{{ vsd_cluster_license_file }}"
@@ -514,8 +570,17 @@ vsd_license_required_days_left: {{ vsd_license_required_days_left }}
 # vsd_license_required_days_left: -1
 {%- endif %}
 
+# < Continue Metroae execution on VSD license failure >
+# Continue Metroae execution even after license failure if this is set to true
+#
+{%- if vsd_continue_on_license_failure is defined %}
+vsd_continue_on_license_failure: {{ vsd_continue_on_license_failure | lower }}
+{%- else %}
+# vsd_continue_on_license_failure: False
+{%- endif %}
+
 # < VSD Ejabberd License File >
-# Path to the Ejabberd license file for the VSD
+# Path to the Ejabberd license file for the VSD including the file name
 #
 {%- if vsd_ejabberd_license_file is defined %}
 vsd_ejabberd_license_file: "{{ vsd_ejabberd_license_file }}"
@@ -523,8 +588,17 @@ vsd_ejabberd_license_file: "{{ vsd_ejabberd_license_file }}"
 # vsd_ejabberd_license_file: ""
 {%- endif %}
 
-# < SD-WAN Portal License Filename >
-# Path to the license file for the SD-WAN Portal
+# < VSTAT License File >
+# Optional License File for Elasticsearch
+#
+{%- if vstat_license_file is defined %}
+vstat_license_file: "{{ vstat_license_file }}"
+{%- else %}
+# vstat_license_file: ""
+{%- endif %}
+
+# < SD-WAN Portal License File >
+# Path to the license file for the SD-WAN Portal including the file name
 #
 {%- if portal_license_file is defined %}
 portal_license_file: "{{ portal_license_file }}"
@@ -533,7 +607,7 @@ portal_license_file: "{{ portal_license_file }}"
 {%- endif %}
 
 # < NUH License File >
-# Path to the license file for the NUH
+# Path to the license file for the NUH including the file name
 #
 {%- if nuh_license_file is defined %}
 nuh_license_file: "{{ nuh_license_file }}"
@@ -621,6 +695,15 @@ vstat_allocate_size_gb: {{ vstat_allocate_size_gb }}
 # vstat_allocate_size_gb: 100
 {%- endif %}
 
+# < Portal Disk Size >
+# Amount of Portal disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+#
+{%- if portal_allocate_size_gb is defined %}
+portal_allocate_size_gb: {{ portal_allocate_size_gb }}
+{%- else %}
+# portal_allocate_size_gb: 16
+{%- endif %}
+
 # < VCIN Disk Size >
 # Amount of VCIN disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
 #
@@ -641,45 +724,40 @@ nsgv_allocate_size_gb: {{ nsgv_allocate_size_gb }}
 
 ################
 
-{%- if show_target_server_type | default('kvm') == 'kvm' %}
-
-##### KVM RAM
+##### KVM and VCenter RAM
 
 # < KVM VSD RAM >
-# Amount of VSD RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+# Valid for only KVM and VCenter deployments. Amount of VSD RAM to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 {%- if vsd_ram is defined %}
 vsd_ram: {{ vsd_ram }}
 {%- else %}
 # vsd_ram: 24
 {%- endif %}
-{%- endif %}
-
-{%- if show_target_server_type | default('kvm') == 'kvm' %}
 
 # < KVM VSC RAM >
-# Amount of VSC RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+# Valid for only KVM and VCenter deployments. Amount of VSC RAM to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 {%- if vsc_ram is defined %}
 vsc_ram: {{ vsc_ram }}
 {%- else %}
 # vsc_ram: 4
 {%- endif %}
-{%- endif %}
-
-{%- if show_target_server_type | default('kvm') == 'kvm' %}
 
 # < KVM VSTAT RAM >
-# Amount of VSTAT RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+# Valid for only KVM and VCenter deployments. Amount of VSTAT RAM to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 {%- if vstat_ram is defined %}
 vstat_ram: {{ vstat_ram }}
 {%- else %}
 # vstat_ram: 16
 {%- endif %}
-{%- endif %}
+
+#########################
 
 {%- if show_target_server_type | default('kvm') == 'kvm' %}
+
+##### KVM RAM
 
 # < KVM VCIN RAM >
 # Amount of VCIN RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
@@ -717,6 +795,18 @@ webfilter_ram: {{ webfilter_ram }}
 
 {%- if show_target_server_type | default('kvm') == 'kvm' %}
 
+# < KVM TPM RAM >
+# Amount of TPM RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+#
+{%- if tpm_ram is defined %}
+tpm_ram: {{ tpm_ram }}
+{%- else %}
+# tpm_ram: 8
+{%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('kvm') == 'kvm' %}
+
 # < KVM Portal RAM >
 # Amount of Portal RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
@@ -729,57 +819,49 @@ portal_ram: {{ portal_ram }}
 #############
 {%- endif %}
 
-{%- if show_target_server_type | default('kvm') == 'kvm' %}
-
-##### KVM CPU
+##### KVM and VCenter CPU
 
 # < KVM VSD CPU cores >
-# Number of CPU's for VSD. Valid only for KVM deployments
+# Valid for only KVM and VCenter deployments. Number of CPU's for VSD.
 #
 {%- if vsd_cpu_cores is defined %}
 vsd_cpu_cores: {{ vsd_cpu_cores }}
 {%- else %}
 # vsd_cpu_cores: 6
 {%- endif %}
-{%- endif %}
 
-{%- if show_target_server_type | default('kvm') == 'kvm' %}
-
-# < VSC CPU cores >
-# Number of CPU's for VSC. Valid only for KVM deployments
+# < KVM VSC CPU cores >
+# Valid for only KVM and VCenter deployments. Number of CPU's for VSC.
 #
 {%- if vsc_cpu_cores is defined %}
 vsc_cpu_cores: {{ vsc_cpu_cores }}
 {%- else %}
 # vsc_cpu_cores: 6
 {%- endif %}
-{%- endif %}
-
-{%- if show_target_server_type | default('kvm') == 'kvm' %}
 
 # < KVM VSTAT CPU cores >
-# Number of CPU's for VSTAT. Valid only for KVM deployments
+# Valid for only KVM and VCenter deployments. Number of CPU's for VSTAT.
 #
 {%- if vstat_cpu_cores is defined %}
 vstat_cpu_cores: {{ vstat_cpu_cores }}
 {%- else %}
 # vstat_cpu_cores: 6
 {%- endif %}
-{%- endif %}
-
-{%- if show_target_server_type | default('kvm') == 'kvm' %}
 
 # < KVM VNSUTIL CPU cores >
-# Number of CPU's for VNSUTIL. Valid only for KVM deployments
+# Valid for only KVM and VCenter deployments. Number of CPU's for VNSUTIL.
 #
 {%- if vnsutil_cpu_cores is defined %}
 vnsutil_cpu_cores: {{ vnsutil_cpu_cores }}
 {%- else %}
 # vnsutil_cpu_cores: 2
 {%- endif %}
-{%- endif %}
+
+#########################
 
 {%- if show_target_server_type | default('kvm') == 'kvm' %}
+
+##### KVM CPU
 
 # < KVM NUH CPU cores >
 # Number of CPU's for NUH. Valid only for KVM deployments
@@ -824,6 +906,18 @@ portal_cpu_cores: {{ portal_cpu_cores }}
 webfilter_cpu_cores: {{ webfilter_cpu_cores }}
 {%- else %}
 # webfilter_cpu_cores: 2
+{%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('kvm') == 'kvm' %}
+
+# < KVM TPM VM CPU cores >
+# Number of CPU's for TPM vm. Valid only for KVM deployments
+#
+{%- if tpm_cpu_cores is defined %}
+tpm_cpu_cores: {{ tpm_cpu_cores }}
+{%- else %}
+# tpm_cpu_cores: 2
 {%- endif %}
 
 #############
@@ -1033,4 +1127,22 @@ vsd_monit_alert_not_on: "{{ vsd_monit_alert_not_on }}"
 {%- endif %}
 
 ##########################################
+
+# < VSD In-place upgrade during Install  >
+# Allowing VSD in-place upgrade during Installation
+#
+{%- if vsd_install_inplace_upgrade is defined %}
+vsd_install_inplace_upgrade: {{ vsd_install_inplace_upgrade | lower }}
+{%- else %}
+# vsd_install_inplace_upgrade: False
+{%- endif %}
+
+# < Keep root access >
+# Create custom username and password without hardening
+#
+{%- if keep_root_access is defined %}
+keep_root_access: {{ keep_root_access | lower }}
+{%- else %}
+# keep_root_access: False
+{%- endif %}
 

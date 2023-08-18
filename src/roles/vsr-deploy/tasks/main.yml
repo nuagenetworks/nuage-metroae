@@ -6,6 +6,18 @@
   no_log: True
   ignore_errors: True
 
+- name: Wait for VSR ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh-port
+  vars:
+    ssh_host: "{{ provider_creds.host }}"
+    ssh_password: "{{ provider_creds.password }}"
+    ssh_user: "{{ provider_creds.username }}"
+    check_login: True
+
+- meta: reset_connection
+
 - name: run show version on remote devices
   local_action:
     module: sros_command
@@ -23,6 +35,7 @@
   fail: msg='VSR reports about "missing license record". Try redeploy with valid license file.'
   when: '"License status : card reboot pending, missing license record" == vsr_license_info.stdout_lines[0][3]'
 
+- meta: reset_connection
 
 - name: Configure DNS in BOF
   sros_command:
@@ -32,6 +45,8 @@
       - "bof save"
     provider: "{{ provider_creds }}"
   delegate_to: localhost
+
+- meta: reset_connection
 
 - name: Create rollback point
   sros_config:
@@ -64,12 +79,16 @@
   debug: msg='{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}' verbosity=1
   with_items: "{{ config_items }}"
 
+- meta: reset_connection
+
 - name: Configure additional configuration to integrate VSR with Nuage VSD
   sros_config:
     lines: '{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}'
     provider: "{{ provider_creds }}"
   with_items: "{{ config_items }}"
   delegate_to: localhost
+
+- meta: reset_connection
 
 - name: Save VSR config
   sros_config:

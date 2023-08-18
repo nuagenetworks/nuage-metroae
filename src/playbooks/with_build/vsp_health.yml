@@ -1,0 +1,163 @@
+---
+- hosts: vsds
+  gather_facts: no
+  pre_tasks:
+    - name: Set upgrade flag
+      set_fact:
+        nuage_upgrade: true
+
+    - name: Check if prereq satisfied for upgrade
+      include_role:
+        name: common
+        tasks_from: check-upgrade-prereq
+      when: preupgrade is defined and preupgrade
+
+    - name: Set upgrade health report name
+      set_fact:
+        report_filename: "{{ vsd_report_name }}"
+
+  vars:
+    vsd_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    vsd_password: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  roles:
+    - vsd-health
+
+- hosts: vstats
+  gather_facts: no
+  serial: 1
+  pre_tasks:
+    - name: Set upgrade flag
+      set_fact:
+        nuage_upgrade: true
+
+    - name: Check if prereq satisfied for upgrade
+      include_role:
+        name: common
+        tasks_from: check-upgrade-prereq
+      when: preupgrade is defined and preupgrade
+
+    - name: Set upgrade health report name
+      set_fact:
+        report_filename: "{{ vstats_report_name }}"
+  vars:
+    vstat_username: "{{ vstat_custom_username | default(vstat_default_username) }}"
+    vstat_password: "{{ vstat_custom_password | default(vstat_default_password) }}"
+  roles:
+    - vstat-health
+  remote_user: "{{ vstat_default_username }}"
+
+- hosts: vcins
+  gather_facts: no
+  serial: 1
+  pre_tasks:
+    - name: Set upgrade flag
+      set_fact:
+        nuage_upgrade: true
+
+    - name: Check if prereq satisfied for upgrade
+      include_role:
+        name: common
+        tasks_from: check-upgrade-prereq
+      when: preupgrade is defined and preupgrade
+
+    - name: Set upgrade health report name
+      set_fact:
+        report_filename: "{{ vcins_report_name }}"
+  vars:
+    vsd_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    vsd_password: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  roles:
+    - vcin-health
+
+- hosts: vscs
+  gather_facts: no
+  serial: 1
+  connection: local
+  pre_tasks:
+    - name: Set upgrade flag
+      set_fact:
+        nuage_upgrade: true
+
+    - name: Check if prereq satisfied for upgrade
+      include_role:
+        name: common
+        tasks_from: check-upgrade-prereq
+      when: preupgrade is defined and preupgrade
+
+    - name: Set upgrade health report name
+      set_fact:
+        report_filename: "{{ vscs_vsp_report_name }}"
+  vars:
+    vsc_username: "{{ vsc_custom_username | default(vsc_default_username) }}"
+    vsc_password: "{{ vsc_custom_password | default(vsc_default_password) }}"
+  roles:
+    - vsc-health
+
+- hosts: primary_vsds
+  gather_facts: no
+  pre_tasks:
+    - name: Set upgrade flag
+      set_fact:
+        nuage_upgrade: true
+
+    - name: Check if prereq satisfied for upgrade
+      include_role:
+        name: common
+        tasks_from: check-upgrade-prereq
+      when: preupgrade is defined and preupgrade
+
+    - name: Set upgrade health report name
+      set_fact:
+        report_filename: "{{ primary_vsds_report_name }}"
+  roles:
+    - vstat-vsd-health
+
+- hosts: vscs
+  gather_facts: no
+  pre_tasks:
+    - name: Set upgrade flag
+      set_fact:
+        nuage_upgrade: true
+
+    - name: Check if prereq satisfied for upgrade
+      include_role:
+        name: common
+        tasks_from: check-upgrade-prereq
+      when: preupgrade is defined and preupgrade
+
+    - name: Set upgrade health report name
+      set_fact:
+        report_filename: "{{ vscs_vstat_report_name }}"
+  vars:
+    vsc_username: "{{ vsc_custom_username | default(vsc_default_username) }}"
+    vsc_password: "{{ vsc_custom_password | default(vsc_default_password) }}"
+  roles:
+    - vstat-vsc-health
+
+- hosts: vrss
+  gather_facts: no
+  pre_tasks:
+    - name: Set upgrade flag
+      set_fact:
+        nuage_upgrade: true
+
+    - name: Check if prereq satisfied for upgrade
+      include_role:
+        name: common
+        tasks_from: check-upgrade-prereq
+      when: preupgrade is defined and preupgrade
+
+    - name: Set upgrade health report name
+      set_fact:
+        report_filename: "{{ vrss_report_name }}"
+  roles:
+    - vstat-vrs-health
+
+- hosts: portals
+  gather_facts: no
+  pre_tasks:
+    - name: Set fact for upgrade report name
+      set_fact:
+        report_filename: "{{ portals_report_name }}"
+  roles:
+    - sdwan-portal-health

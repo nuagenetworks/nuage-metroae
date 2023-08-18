@@ -229,5 +229,6 @@ def main():
     else:
         module.fail_json(msg="Unable to wait for tools for non-existing VM %(name)s" % module.params)
 
+
 if __name__ == '__main__':
     main()

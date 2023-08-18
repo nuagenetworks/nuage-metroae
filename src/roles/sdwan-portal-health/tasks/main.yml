@@ -1,0 +1,194 @@
+- name: Wait for PORTAL VM ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
+    host_username: "{{ portal_default_username }}"
+
+- import_tasks: report_start.yml
+
+- block:
+
+  - name: Get running container IDs
+    shell: docker ps -q
+    register: all_running_container_ids
+
+  - name: Get all container IDs
+    shell: docker ps -qa
+    register: all_container_ids
+
+  - name: Set fact for exited container ID(s)
+    set_fact:
+      exited_container_ids: "{{ all_container_ids.stdout_lines | difference(all_running_container_ids.stdout_lines) }}"
+
+  - name: Write exited container ID separator to report file
+    nuage_append: filename="{{ report_path }}" text="---------------CONTAINER_INFORMATION----------------\n"
+    delegate_to: localhost
+
+  - name: Write exited container IDs to report file
+    nuage_append: filename="{{ report_path }}" text="ERROR{{':'}} Expected all containers to be running. Container(s) with ID(s){{':'}} {{ exited_container_ids | list | to_json }} not running.\n"
+    when: exited_container_ids|length > 0
+    delegate_to: localhost
+
+  - name: Write successful result to report file
+    nuage_append: filename="{{ report_path }}" text="All containers are running.\n"
+    when: exited_container_ids|length == 0
+    delegate_to: localhost
+
+  - name: Check Portal endpoint health (ignoring errors)
+    uri:
+      url: https://localhost/vnsportal/health
+      method: GET
+      validate_certs: False
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    register: curl_output
+    until: curl_output.status == 200
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
+  - name: Write health endpoint check to report file
+    nuage_append: filename="{{ report_path }}" text="--------HEALTH ENDPOINT RESULT----------\n"
+    delegate_to: localhost
+
+  - name: Set fact if unable to reach health endpoint
+    nuage_append: filename="{{ report_path }}" text="ERROR{{':'}} Expected return code 200, got {{ curl_output.status }}\n"
+    delegate_to: localhost
+    when: curl_output.status != 200
+
+  - name: Write portal health endpoint result to report file
+    nuage_append: filename="{{ report_path }}" text="Got expected return code from health endpoint{{':'}} {{ curl_output.status }}\n"
+    delegate_to: localhost
+    when: curl_output.status == 200
+
+  - block:
+
+    - block:
+
+      - name: Check if cluster bootstrap log already exists
+        stat:
+          path: "{{ metro_reports_dir }}/{{ portal1.hostname }}/vnsportal_cluster_bootstrap.log"
+        register: cluster_bootstrap_log_exists
+
+      - block:
+
+        - name: Collect output of cluster bootstrap log
+          shell: "cat {{ metro_reports_dir }}/{{ portal1.hostname }}/vnsportal_cluster_bootstrap.log"
+          register: cluster_bootstrap_log_contents
+
+        - name: Write separator for cluster bootstrap log errors
+          nuage_append: filename="{{ report_path }}" text="-------CLUSTER BOOTSTRAP LOG--------\n"
+
+        - name: Set fact for errors in docker logs
+          nuage_append: filename="{{ report_path }}" text="ERROR{{':'}} There were errors during the cluster bootstrap.\n"
+          when: cluster_bootstrap_log_contents.stdout.find("[ERROR]") != -1
+
+        - name: Write out successful cluster bootstrap
+          nuage_append: filename="{{ report_path }}" text="There were no failures during the cluster bootstrap process.\n"
+          when: cluster_bootstrap_log_contents.stdout.find("[ERROR]") == -1
+
+        when: cluster_bootstrap_log_exists.stat.exists
+
+      delegate_to: localhost
+
+    - name: Check cluster health
+      shell: "/opt/vnsportal/cluster_check.sh {{ portal_database_default_username }} {{ portal_database_default_password }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      register: cluster_check
+
+    - name: Clean cluster check health output
+      set_fact:
+        cluster_health_json: "{{ cluster_check.stdout | cluster_status_to_json }}"
+
+    - name: Set fact for wsrep connected
+      set_fact:
+        wsrep_connected: "{{ cluster_health_json['wsrep_connected'] }}"
+
+    - name: Set fact for wsrep local state
+      set_fact:
+        wsrep_local_state_comment: "{{ cluster_health_json['wsrep_local_state_comment'] }}"
+
+    - name: Set fact for wsrep ready
+      set_fact:
+        wsrep_ready: "{{ cluster_health_json['wsrep_ready'] }}"
+
+    - name: Set fact for wsrep cluster size
+      set_fact:
+        wsrep_cluster_size: "{{ cluster_health_json['wsrep_cluster_size'] }}"
+
+    - name: Set fact for wsrep cluster status
+      set_fact:
+        wsrep_cluster_status: "{{ cluster_health_json['wsrep_cluster_status'] }}"
+
+    - name: Set fact for wsrep incoming addresses
+      set_fact:
+        wsrep_incoming_addresses: "{{ cluster_health_json['wsrep_incoming_addresses'] }}"
+
+    - block:
+
+      - name: Write separator for cluster health check to report file
+        nuage_append: filename="{{ report_path }}" text="--------DATABASE STATUS CHECK--------\n"
+
+      - name: Write command to report file
+        nuage_append: filename="{{ report_path }}" text="Executed command{{':'}} /opt/vnsportal/cluster_check.sh {{ portal_database_default_username }} {{ portal_database_default_password }}\n"
+
+      - name: Write expected wsrep connected to report file
+        nuage_append: filename="{{ report_path }}" text="wsrep_connected{{':'}} {{ wsrep_connected }}\n"
+        when: wsrep_connected is match("ON")
+
+      - name: Write unexpected wsrep connected to report file
+        nuage_append: filename="{{ report_path }}" text="ERROR{{':'}} Expected wsrep_connected to be 'ON'. Got {{ wsrep_connected }}\n"
+        when: wsrep_connected is not match("ON")
+
+      - name: Write expected wsrep local state to report file
+        nuage_append: filename="{{ report_path }}" text="wsrep_local_state_comment{{':'}} {{ wsrep_local_state_comment }}\n"
+        when: wsrep_local_state_comment is match("Synced")
+
+      - name: Write unexpected wsrep local state to report file
+        nuage_append: filename="{{ report_path }}" text="ERROR{{':'}} Expected 'Synced' for wsrep_local_state_comment. Got {{ wsrep_local_state_comment }}\n"
+        when: wsrep_local_state_comment is not match("Synced")
+
+      - name: Write expected wsrep ready to report file
+        nuage_append: filename="{{ report_path }}" text="wsrep_ready{{':'}} {{ wsrep_ready }}\n"
+        when: wsrep_ready is match("ON")
+
+      - name: Write unexpected wsrep ready to report file
+        nuage_append: filename="{{ report_path }}" text="ERROR{{':'}} Expected wsrep_ready to be 'ON'. Got {{ wsrep_ready }}\n"
+        when: wsrep_ready is not match("ON")
+
+      - name: Write expected wsrep cluster size
+        nuage_append: filename="{{ report_path }}" text="wsrep_cluster_size{{':'}} {{ wsrep_cluster_size }}\n"
+        when: wsrep_cluster_size|int == 3
+
+      - name: Write out unexpected wsrep cluster size
+        nuage_append: filename="{{ report_path }}" text="Expected wsrep_cluster_size to be 3. Got {{ wsrep_cluster_size }}\n"
+        when: wsrep_cluster_size|int != 3
+
+      - name: Write expected wsrep cluster status to report file
+        nuage_append: filename="{{ report_path }}" text="wsrep_cluster_status{{':'}} {{ wsrep_cluster_status }}\n"
+        when: wsrep_cluster_status is match("Primary")
+
+      - name: Write unexpected wsrep cluster status to report file
+        nuage_append: filename="{{ report_path }}" text="ERROR{{':'}} Expected wsrep_cluster_status to be 'Primary'. Got {{ wsrep_cluster_status }}\n"
+        when: wsrep_cluster_status is not match("Primary")
+
+      - name: Write expected wsrep_incoming_addresses
+        nuage_append: filename="{{ report_path }}" text="wsrep_incoming_addresses{{':'}} {{ wsrep_incoming_addresses }}\n"
+        when:
+          - portal1.mgmt_ip in wsrep_incoming_addresses
+          - portal2.mgmt_ip in wsrep_incoming_addresses
+          - portal3.mgmt_ip in wsrep_incoming_addresses
+
+      - name: Write unexpected wsrep incoming addresses
+        nuage_append: filename="{{ report_path }}" text="ERROR{{':'}} Expected the following IP addresses{{':'}} {{ portal1.mgmt_ip }}, {{ portal2.mgmt_ip }}, {{ portal3.mgmt_ip }}. Got {{ wsrep_incoming_addresses }}\n"
+        when: portal1.mgmt_ip not in wsrep_incoming_addresses or portal2.mgmt_ip not in wsrep_incoming_addresses or portal3.mgmt_ip not in wsrep_incoming_addresses
+
+      delegate_to: localhost
+
+    when: portal_sa_or_ha is match('ha')
+
+  - import_tasks: report_end.yml
+
+  remote_user: "{{ portal_default_username }}"
+  when: inventory_hostname == portal1.hostname or inventory_hostname == portal2.hostname or inventory_hostname == portal3.hostname 

@@ -9,6 +9,11 @@
     that: "upgrade_to_version is defined"
     msg: "Upgrade to version is missing"
 
+- name: Assert that upgrade from version and upgrade to version are not equal
+  assert:
+    that: upgrade_from_version != upgrade_to_version
+    msg: "Upgrade from version and upgrade to version are the same. Please ensure that you have specified the correct versions."
+
 - name: Verify that upgrade_vmname is defined
   assert:
     that: "upgrade_vmname is defined"
@@ -16,6 +21,32 @@
   when:
     - component_type | default("NONE") != 'vsc'
     - not (vsd_inplace_upgrade | default(false) and component_type | default("NONE") == 'vsd')
+
+- block:
+
+  - name: Check that the VSD migration scripts path and file exists
+    set_fact:
+      is_VSD_migration_script_path_missing: "{{ vsd_migration_iso_path | default('MISSING') == 'MISSING' }}"
+      is_VSD_migration_script_file_missing: "{{ vsd_migration_iso_file_name | default('MISSING') == 'MISSING' }}"
+
+  - name: Delete the md5 files
+    file:
+      path: "{{ inventory_dir }}/deployment.md5.yml"
+      state: absent
+    when: is_VSD_migration_script_path_missing or is_VSD_migration_script_file_missing
+    delegate_to: localhost
+
+  - name: Check that VSD migration scripts path is defined
+    assert:
+      that: not is_VSD_migration_script_path_missing
+      msg: "vsd_migration_scripts_path is missing"
+
+  - name: Check that VSD migration scripts file is defined
+    assert:
+      that: not is_VSD_migration_script_file_missing
+      msg: "vsd_migration_scripts_file is missing"
+
+  when: component_type | default("NONE") == 'vsd'
 
 - block:
 
@@ -43,26 +74,77 @@
 
 - block:
 
+  - name: Check that VSTAT upgrade scripts path and file
+    set_fact:
+      is_VSTAT_upgrade_script_path_missing: "{{ vstat_upgrade_scripts_path | default('MISSING') == 'MISSING' }}"
+      is_VSTAT_upgrade_script_file_missing: "{{ vstat_upgrade_scripts_file | default('MISSING') == 'MISSING' }}"
+
+  - name: Delete the md5 files
+    file:
+      path: "{{ inventory_dir }}/deployment.md5.yml"
+      state: absent
+    when: is_VSTAT_upgrade_script_path_missing or is_VSTAT_upgrade_script_file_missing
+    delegate_to: localhost
+
   - name: Check that VSTAT upgrade scripts path is defined
     assert:
-      that: "vstat_upgrade_scripts_path | default('MISSING') != 'MISSING'"
+      that: not is_VSTAT_upgrade_script_path_missing
       msg: "vstat_upgrade_scripts_path is missing"
 
   - name: Check that VSTAT upgrade scripts file is defined
     assert:
-      that: "vstat_upgrade_scripts_file | default('MISSING') != 'MISSING'"
+      that: not is_VSTAT_upgrade_script_file_missing
       msg: "vstat_upgrade_scripts_file is missing"
 
   when: component_type | default("NONE") == 'vstat'
 
-- name: Check that TIM file was found for VSC
-  assert:
-    that: "vsc_tim_path | default('MISSING') != 'MISSING' and vsc_tim_file_name | default('MISSING') != 'MISSING'"
-    msg: "Missing VSC TIM image file for {{ hostname }} under the unzipped file directory, please unzip it and issue reset_build"
+- block:
+
+  - name: Check that TIM file is found for VSC
+    set_fact:
+      is_TIM_file_missing: "{{ vsc_tim_path | default('MISSING') == 'MISSING' and vsc_tim_file_name | default('MISSING') == 'MISSING' }}"
+
+  - name: Delete the md5 files
+    file:
+      path: "{{ inventory_dir }}/deployment.md5.yml"
+      state: absent
+    when: is_TIM_file_missing
+    delegate_to: localhost
+
+  - name: Check that TIM file was found for VSC
+    assert:
+      that: not is_TIM_file_missing
+      msg: "Missing VSC TIM image file for {{ hostname }} under the unzipped file directory, please unzip it and issue reset_build"
+
   when: component_type | default("NONE") == 'vsc'
 
-- name: Check that the number of vscs is even when force_vsc_standalone_upgrade is not set
+- name: Check that the number of vscs is '1' or even
   assert:
-    that: "force_vsc_standalone_upgrade | default(false) or vscs|length == 1 or vscs|length % 2 == 0"
-    msg: "Cannot upgrade on odd number of vscs in pairs. Please use force_vsc_standalone_upgrade to upgrade vscs as standalone"
+    that: "vscs|length == 1 or vscs|length % 2 == 0"
+    msg: "Cannot upgrade on odd number of vscs in pairs."
   when: vscs is defined and vscs
+
+- block:
+
+  - name: Check for portal files missing
+    set_fact:
+      is_portal_path_missing: "{{ portal_path | default('MISSING') == 'MISSING' }}"
+      is_portal_file_missing: "{{ portal_file_name | default('MISSING') == 'MISSING' }}"
+
+  - name: Delete the md5 files
+    file:
+      path: "{{ inventory_dir }}/deployment.md5.yml"
+      state: absent
+    when: is_portal_file_missing or is_portal_path_missing
+    delegate_to: localhost
+
+  - name: Check the image path for portal container
+    assert:
+      that: not is_portal_file_missing and not is_portal_path_missing
+      msg: "Missing SDWAN portal container tar or CentOS image for portal under the unzipped directory, Please Copy it"
+
+  - include_role:
+      name: check-sdwan-portal-upgrade-prereqs
+      tasks_from: main
+
+  when: component_type | default("NONE") == 'portal'

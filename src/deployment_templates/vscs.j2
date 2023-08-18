@@ -70,7 +70,7 @@
     {%- endif %}
 
     # < List of control IP VPRNs >
-    # Comma Seperated list of control IP VPRNs. Each item in list is of format VLAN_ID:Control_IP_ADDR/NETMASK_LENGTH . Both Control IP address and Netmask length are optional
+    # Comma Seperated list of control IP VPRNs. Each item in list is of format VLAN_ID:Control_IP_ADDR/NETMASK_LENGTH:NEXT_HOP . Control IP address, netmask length and next hop are optional
     #
     {%- if item.ctrl_ip_vprn_list is defined %}
     ctrl_ip_vprn_list: [ {% for i in item.ctrl_ip_vprn_list | default([]) %}"{{ i }}", {% endfor %}]
@@ -85,7 +85,20 @@
     # < System IP address >
     # Required for BGP pairing with peers
     #
+    {%- if item.system_ip is defined %}
     system_ip: "{{ item.system_ip }}"
+    {%- else %}
+    # system_ip: ""
+    {%- endif %}
+
+    # < Router ID >
+    # The router ID of this VSC in IPV4 address format. Required when system_ip is IPV6.
+    #
+    {%- if item.router_id is defined %}
+    router_id: "{{ item.router_id }}"
+    {%- else %}
+    # router_id: (System IP)
+    {%- endif %}
 
     # < VM name >
     # Name of the virtual machine on the Hypervisor/vCenter Server.
@@ -120,12 +133,12 @@
 
     # < Target Server type >
     # Type of hypervisor environment where VMs will be instantiated. Use 'none' when skipping predeploy.
-    # (kvm, vcenter, openstack, nuagex, none) 
+    # (kvm, vcenter, openstack, none) 
     #
     target_server_type: "{{ item.target_server_type }}"
 
     # < Target Server IP or FQDN >
-    # Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server
+    # Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server. When target_server_type is set to openstack, this property is unused and should be set to 0.0.0.0
     #
     target_server: "{{ item.target_server }}"
 
@@ -198,6 +211,37 @@
 
     ############################
 
+    ##### BGP Interface
+
+    # < BGP Interface IP Address >
+    # IP Address for Optional BGP Interface
+    #
+    {%- if item.bgp_interface_ip_address is defined %}
+    bgp_interface_ip_address: "{{ item.bgp_interface_ip_address }}"
+    {%- else %}
+    # bgp_interface_ip_address: ""
+    {%- endif %}
+
+    # < BGP Interface Prefix length >
+    # Prefix length for the optional BGP interface
+    #
+    {%- if item.bgp_interface_ip_prefix is defined %}
+    bgp_interface_ip_prefix: {{ item.bgp_interface_ip_prefix }}
+    {%- else %}
+    # bgp_interface_ip_prefix: 24
+    {%- endif %}
+
+    # < BGP Interface VLAN ID >
+    # VLAN ID for the optional BGP interface
+    #
+    {%- if item.bgp_interface_vlan_id is defined %}
+    bgp_interface_vlan_id: {{ item.bgp_interface_vlan_id }}
+    {%- else %}
+    # bgp_interface_vlan_id: 1000
+    {%- endif %}
+
+    ###################
+
     {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
     ##### vCenter Parameters
@@ -257,6 +301,18 @@
     vcenter_vmfolder: "{{ item.vcenter_vmfolder }}"
     {%- else %}
     # vcenter_vmfolder: (global vCenter VM folder)
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter Hosts and Clusters Folder >
+    # Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+    #
+    {%- if item.vcenter_host_clusters_folder is defined %}
+    vcenter_host_clusters_folder: "{{ item.vcenter_host_clusters_folder }}"
+    {%- else %}
+    # vcenter_host_clusters_folder: ""
     {%- endif %}
 
     ########################
@@ -374,6 +430,90 @@
 
     {%- if show_target_server_type | default('openstack') == 'openstack' %}
 
+    # < VSC Trunk Name >
+    # Name of the trunk to be setup between control port and its underlay ports
+    #
+    {%- if item.vsc_trunk_name is defined %}
+    vsc_trunk_name: "{{ item.vsc_trunk_name }}"
+    {%- else %}
+    # vsc_trunk_name: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack first External Network >
+    # Name of first external network on OpenStack for VSC
+    #
+    {%- if item.openstack_external_network1 is defined %}
+    openstack_external_network1: "{{ item.openstack_external_network1 }}"
+    {%- else %}
+    # openstack_external_network1: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack first External Subnet >
+    # Name of first external subnet on OpenStack for VSC
+    #
+    {%- if item.openstack_external_subnet1 is defined %}
+    openstack_external_subnet1: "{{ item.openstack_external_subnet1 }}"
+    {%- else %}
+    # openstack_external_subnet1: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack second External Network >
+    # Name of second external network on OpenStack for VSC
+    #
+    {%- if item.openstack_external_network2 is defined %}
+    openstack_external_network2: "{{ item.openstack_external_network2 }}"
+    {%- else %}
+    # openstack_external_network2: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack second External Subnet >
+    # Name of second external subnet on OpenStack for VSC
+    #
+    {%- if item.openstack_external_subnet2 is defined %}
+    openstack_external_subnet2: "{{ item.openstack_external_subnet2 }}"
+    {%- else %}
+    # openstack_external_subnet2: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack third External Network >
+    # Name of third external network on OpenStack for VSC
+    #
+    {%- if item.openstack_external_network3 is defined %}
+    openstack_external_network3: "{{ item.openstack_external_network3 }}"
+    {%- else %}
+    # openstack_external_network3: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack third External Subnet >
+    # Name of third external subnet on OpenStack for VSC
+    #
+    {%- if item.openstack_external_subnet3 is defined %}
+    openstack_external_subnet3: "{{ item.openstack_external_subnet3 }}"
+    {%- else %}
+    # openstack_external_subnet3: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
     # < OpenStack Control Port Name >
     # Name for Control interface
     #
@@ -394,6 +534,159 @@
     {%- else %}
     # openstack_control_port_security_groups: []
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack first External Port Name >
+    # Name for first external port interface
+    #
+    {%- if item.openstack_external_port1_name is defined %}
+    openstack_external_port1_name: "{{ item.openstack_external_port1_name }}"
+    {%- else %}
+    # openstack_external_port1_name: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack first External Port Security Groups >
+    # Set of security groups to associate with first external interface
+    #
+    {%- if item.openstack_external_port1_security_groups is defined %}
+    openstack_external_port1_security_groups: [ {% for i in item.openstack_external_port1_security_groups | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # openstack_external_port1_security_groups: []
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack second External Port Name >
+    # Name for second external port interface
+    #
+    {%- if item.openstack_external_port2_name is defined %}
+    openstack_external_port2_name: "{{ item.openstack_external_port2_name }}"
+    {%- else %}
+    # openstack_external_port2_name: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack second External Port Security Groups >
+    # Set of security groups to associate with second external interface
+    #
+    {%- if item.openstack_external_port2_security_groups is defined %}
+    openstack_external_port2_security_groups: [ {% for i in item.openstack_external_port2_security_groups | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # openstack_external_port2_security_groups: []
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack third External Port Name >
+    # Name for third external port interface
+    #
+    {%- if item.openstack_external_port3_name is defined %}
+    openstack_external_port3_name: "{{ item.openstack_external_port3_name }}"
+    {%- else %}
+    # openstack_external_port3_name: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack first External Port Security Groups >
+    # Set of security groups to associate with first external interface
+    #
+    {%- if item.openstack_external_port3_security_groups is defined %}
+    openstack_external_port3_security_groups: [ {% for i in item.openstack_external_port3_security_groups | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # openstack_external_port3_security_groups: []
+    {%- endif %}
+    {%- endif %}
+
+    # < First External IP address >
+    # The first External IP address of the controller
+    #
+    {%- if item.external_ip1 is defined %}
+    external_ip1: "{{ item.external_ip1 }}"
+    {%- else %}
+    # external_ip1: ""
+    {%- endif %}
+
+    # < First External Netmask Prefix Length >
+    # First External network prefix length
+    #
+    {%- if item.external_ip1_prefix is defined %}
+    external_ip1_prefix: {{ item.external_ip1_prefix }}
+    {%- else %}
+    # external_ip1_prefix: 0
+    {%- endif %}
+
+    # < Second External IP address >
+    # The second External IP address of the controller
+    #
+    {%- if item.external_ip2 is defined %}
+    external_ip2: "{{ item.external_ip2 }}"
+    {%- else %}
+    # external_ip2: ""
+    {%- endif %}
+
+    # < Second External Netmask Prefix Length >
+    # Second External network prefix length
+    #
+    {%- if item.external_ip2_prefix is defined %}
+    external_ip2_prefix: {{ item.external_ip2_prefix }}
+    {%- else %}
+    # external_ip2_prefix: 0
+    {%- endif %}
+
+    # < Third External IP address >
+    # The third External IP address of the controller
+    #
+    {%- if item.external_ip3 is defined %}
+    external_ip3: "{{ item.external_ip3 }}"
+    {%- else %}
+    # external_ip3: ""
+    {%- endif %}
+
+    # < Third External Netmask Prefix Length >
+    # Third External network prefix length
+    #
+    {%- if item.external_ip3_prefix is defined %}
+    external_ip3_prefix: {{ item.external_ip3_prefix }}
+    {%- else %}
+    # external_ip3_prefix: 0
+    {%- endif %}
+
+    # < First External Port's Segmentation Id >
+    # Segmentation id of first external port to be used during trunking
+    #
+    {%- if item.segmentation_id1 is defined %}
+    segmentation_id1: {{ item.segmentation_id1 }}
+    {%- else %}
+    # segmentation_id1: 0
+    {%- endif %}
+
+    # < Second External Port's Segmentation Id >
+    # Segmentation id of first external port to be used during trunking
+    #
+    {%- if item.segmentation_id2 is defined %}
+    segmentation_id2: {{ item.segmentation_id2 }}
+    {%- else %}
+    # segmentation_id2: 0
+    {%- endif %}
+
+    # < Third External Port's Segmentation Id >
+    # Segmentation id of third external port to be used during trunking
+    #
+    {%- if item.segmentation_id3 is defined %}
+    segmentation_id3: {{ item.segmentation_id3 }}
+    {%- else %}
+    # segmentation_id3: 0
     {%- endif %}
 
     {%- if show_target_server_type | default('openstack') == 'openstack' %}
@@ -559,6 +852,15 @@
     vsc_config_file_paths: [ {% for i in item.vsc_config_file_paths | default([]) %}"{{ i }}", {% endfor %}]
     {%- else %}
     # vsc_config_file_paths: []
+    {%- endif %}
+
+    # < Override the configuration on VSC >
+    # This will override the Metro Provided config on the VSC by the config provided in vsc_config_file_paths
+    #
+    {%- if item.override_vsc_config is defined %}
+    override_vsc_config: {{ item.override_vsc_config | lower }}
+    {%- else %}
+    # override_vsc_config: False
     {%- endif %}
 
     #################

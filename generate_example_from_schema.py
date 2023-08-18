@@ -71,13 +71,15 @@ class ExampleFileGenerator(object):
                 if "listName" in schema:
                     list_name = schema["listName"]
                 else:
-                    list_name = schema["items"]["title"].lower() + "s"
+                    list_name = (
+                        schema["items"]["title"].lower().replace(" ", "_") +
+                        "s")
             else:
                 item_name = schema["title"][0:-1]
                 if "listName" in schema:
                     list_name = schema["listName"]
                 else:
-                    list_name = schema["title"].lower()
+                    list_name = schema["title"].lower().replace(" ", "_")
             if self.as_template:
                 self.example_lines.append(
                     "{%% if %s is defined and %s %%}" % (list_name,
@@ -111,8 +113,8 @@ class ExampleFileGenerator(object):
             self.add_example_fields(schema["properties"], required)
 
     def add_example_fields(self, field_dict, required, is_list=False):
-        for name, field in sorted(field_dict.iteritems(),
-                                  key=lambda (k, v): (v["propertyOrder"], k)):
+        for name, field in sorted(iter(field_dict.items()),
+                                  key=lambda k_v: (k_v[1]["propertyOrder"], k_v[0])):
 
             is_required = name in required
             if "deprecated" not in field:
@@ -268,18 +270,18 @@ def main():
         default=False, help="Generates as a jinja2 template")
     parser.add_argument(
         "--as-example", dest="as_example", action='store_true', default=False,
-        help="Generates a example schema using example data")
+        help="Generates an example schema using example data")
     parser.add_argument(
         "--example_data_folder", help="Location of example data folder")
     args = parser.parse_args()
 
     if not args.schema:
-        print "Missing schema name for creating example"
+        print("Missing schema name for creating example")
         parser.print_help()
         sys.exit()
 
     if args.as_example and (args.example_data_folder is None):
-        print "Example data folder needed for creating example"
+        print("Example data folder needed for creating example")
         parser.print_help()
         sys.exit()
 
@@ -297,16 +299,16 @@ def main():
         schema_filename = schema_filename + ".json"
 
     if os.path.isfile(schema_filename):
-        print generator.generate_example_from_schema(
-            schema_filename).encode('utf-8')
+        print(generator.generate_example_from_schema(
+              schema_filename).encode('utf-8'))
         generator.generate_example_from_schema(schema_filename).encode('utf-8')
     else:
         schema_filename = os.path.join(SCHEMA_DIRECTORY, schema_filename)
         if os.path.isfile(schema_filename):
             generator.generate_example_from_schema(
                 schema_filename).encode('utf-8')
-            print (generator.generate_example_from_schema(
-                schema_filename)).encode('utf-8')
+            print((generator.generate_example_from_schema(
+                  schema_filename)).encode('utf-8'))
         else:
             raise Exception("Could not find schema file %s" % schema_filename)
 

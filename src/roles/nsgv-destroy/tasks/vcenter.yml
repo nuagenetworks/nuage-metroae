@@ -1,18 +1,27 @@
 ---
 - name: Finding VM folder (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_find:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
     name: "{{ vmname }}"
     validate_certs: no
   register: nsgv_vm_folder
   ignore_errors: on
 
+- name: Check output message for unexpected errors
+  assert:
+    that: nsgv_vm_folder.msg is search('Unable to find folders for virtual machine')
+    fail_msg: "{{ nsgv_vm_folder.msg }}"
+  when: nsgv_vm_folder.msg is defined
+
+- name: Check for exception in NSGv VM Folder
+  fail: msg="Exception found {{ nsgv_vm_folder.exception }}"
+  when: nsgv_vm_folder.exception is defined
+
 - name: Gathering info on VM (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_info:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -29,7 +38,7 @@
 
 - block:
   - name: Power off the NSGv VM
-    connection: local
+    delegate_to: localhost
     vmware_guest:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -42,7 +51,7 @@
     when: nsgv_facts['instance']['hw_power_status'] == 'poweredOn'
 
   - name: Removing the NSGv VM
-    connection: local
+    delegate_to: localhost
     vmware_guest:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"

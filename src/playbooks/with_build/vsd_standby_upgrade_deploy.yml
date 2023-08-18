@@ -1,0 +1,140 @@
+---
+- hosts: primary_vsds
+  gather_facts: no
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Run vsd-prepare-replication-master-cluster
+      command: "/opt/vsd/bin/vsd-prepare-replication-master-cluster.sh"
+      when: vsd_standby | default(false)
+
+- hosts: vsd_ha_node1
+  gather_facts: no
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Create backup on first primary node
+      block:
+
+      - name: Clear the backup dir of old backups
+        file:
+          path: "/tmp/backup"
+          state: absent
+      - name: Create data directory on first standby vm
+        file:
+          path: "/tmp/backup"
+          state: directory
+      - name: Run vsd-prepare-replication-master on first cluster
+        command: >-
+          /opt/vsd/bin/vsd-prepare-replication-master.sh
+          -a {{ groups['vsd_standby_node1'][0] }}
+          -b {{ groups['vsd_standby_node2'][0] }}
+          -c {{ groups['vsd_standby_node3'][0] }}
+        retries: 15
+        delay: 10
+        register: result
+        until: result.rc == 0
+      - name: Check for tar.gz files in the backup directory
+        find:
+          paths: "/tmp/backup/"
+          patterns: "*.tar.gz"
+        register: tar_gz_files
+      - name: Assert that at least one tar.gz file was found
+        assert:
+          that: tar_gz_files.matched is defined and tar_gz_files.matched > 0
+          msg: "No backup files found on the VSD. Quitting."
+
+      when: vsd_standby | default(false)
+
+- hosts: vsd_upgrade_standby_node1
+  gather_facts: no
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Clean known_hosts of Standby VSD (ignoring errors)
+      known_hosts:
+        name: "{{ inventory_hostname }}"
+        state: absent
+      delegate_to: localhost
+      no_log: True
+      ignore_errors: True
+
+    - name: Wait for VSD ssh to be ready
+      include_role:
+        name: common
+        tasks_from: wait-for-ssh
+      vars:
+        ssh_host: "{{ inventory_hostname }}"
+        host_username: "{{ vsd_default_username }}"
+
+    - name: Clear data directory on first standby vm
+      file:
+        path: "/opt/vsd/data"
+        state: absent
+      when:
+        - vsd_standby | default(false)
+    - name: Create data directory on first standby vm
+      file:
+        path: "/opt/vsd/data"
+        state: directory
+      when:
+        - vsd_standby | default(false)
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Clear any pre-existing backups
+      file:
+        path: /tmp/vsdback
+        state: absent
+      when:
+        - vsd_standby | default(false)
+    - name: Create vsd backup directory for localhost
+      file:
+        path: /tmp/vsdback
+        state: directory
+      when:
+        - vsd_standby | default(false)
+
+- hosts: vsd_ha_node1
+  gather_facts: no
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Transfer data from first VSD to host machine
+      synchronize:
+        src: /tmp/backup/
+        dest: /tmp/vsdback
+        mode: pull
+        rsync_opts:
+          - "--omit-dir-times"
+      when:
+        - vsd_standby | default(false)
+
+- hosts: vsd_upgrade_standby_node1
+  gather_facts: no
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Transfer data from host machine to first standby vm
+      synchronize:
+        dest: /opt/vsd/data/
+        src: /tmp/vsdback/
+        mode: push
+      when:
+        - vsd_standby | default(false)
+
+- hosts: standby_upgrade_vsds
+  gather_facts: no
+  pre_tasks:
+    - name: Set cluster flag
+      set_fact:
+        vsd_standby_cluster: true
+      when:
+        - vsd_standby | default(false)
+  roles:
+    - vsd-deploy
+
+- hosts: vsd_upgrade_standby_node1
+  gather_facts: no
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Run the replication script on first standby cluster
+      command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_ha_node1'][0] }}"
+      when:
+        - vsd_standby | default(false)

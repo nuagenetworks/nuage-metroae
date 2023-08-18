@@ -1,6 +1,6 @@
 ---
 - name: Finding VM folder (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_find:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -12,7 +12,7 @@
   ignore_errors: on
 
 - name: Gathering info on VM (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_info:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -36,18 +36,20 @@
   set_fact:
     vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'\
       {{ vcenter.password | urlencode }}'@{{ target_server }}/\
-      {{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+      {{ vcenter.datacenter }}/host/\
+      {{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/' | urlencode, '') }}{{ vcenter.cluster }}"
 
 - name: Update vCenter path if resource pool is configured
   set_fact:
     vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'\
       {{ vcenter.password | urlencode }}'@{{ target_server }}/\
-      {{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/\
+      {{ vcenter.datacenter }}/host/\
+      {{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/' | urlencode, '') }}{{ vcenter.cluster }}/\
       Resources/{{ vcenter.resource_pool | urlencode }}"
   when: vcenter.resource_pool != 'NONE'
 
 - name: Deploy STCv image on vCenter (Can take several minutes)
-  connection: local
+  delegate_to: localhost
   command: >
     {{ vcenter_global.ovftool }}
     --acceptAllEulas
@@ -72,7 +74,7 @@
   changed_when: True
 
 - name: Waiting until VMware tools becomes available
-  connection: local
+  delegate_to: localhost
   vmware_guest_tools_wait:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"

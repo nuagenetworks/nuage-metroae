@@ -6,6 +6,7 @@ import json
 from jsonschema import validate, ValidationError
 import os
 import sys
+from builtins import str
 
 
 DEBUG = False
@@ -15,16 +16,16 @@ CONTAINER_MOUNT_DIRECTORY = "/metroae_data/deployments"
 
 
 def usage():
-    print "Converts a CSV file (spreadsheet) into a deployment configuration"
-    print "under the %s/ directory.  A template for the spreadsheet is " % (
-        DEPLOYMENTS_DIRECTORY)
-    print "provided as deployment_spreadsheet_template.csv"
-    print ""
-    print "Usage:"
-    print "    " + " ".join([sys.argv[0],
+    print("Converts a CSV file (spreadsheet) into a deployment configuration")
+    print("under the %s/ directory.  A template for the spreadsheet is " % (
+          DEPLOYMENTS_DIRECTORY))
+    print("provided as deployment_spreadsheet_template.csv")
+    print("")
+    print("Usage:")
+    print("    " + " ".join([sys.argv[0],
                              "<csv_file>",
-                             "<deployment_name>"])
-    print ""
+                             "<deployment_name>"]))
+    print("")
 
 
 class CsvDeploymentConverter(object):
@@ -55,7 +56,7 @@ class CsvDeploymentConverter(object):
         self.rows = list()
 
         with open(csv_file, 'r') as f:
-            lines = f.read().decode("utf-8")
+            lines = f.read()
 
         for row in lines.split("\n"):
             self._parse_row(row)
@@ -105,7 +106,7 @@ class CsvDeploymentConverter(object):
                 file_path = os.path.join(SCHEMAS_DIRECTORY, file_name)
                 self._debug("Reading schema %s", file_path)
                 with open(file_path, "r") as f:
-                    schema_str = f.read().decode("utf-8")
+                    schema_str = f.read()
 
                 try:
                     self.schemas[file_name[0:-5]] = json.loads(schema_str)
@@ -322,7 +323,7 @@ class CsvDeploymentConverter(object):
         datatype = self._get_field_datatype(schema_name, field_name)
 
         if datatype == "string":
-            return unicode(cell_value)
+            return str(cell_value)
         elif datatype == "integer":
             try:
                 return int(cell_value)
@@ -425,7 +426,7 @@ class CsvDeploymentConverter(object):
         template = jinja2.Template(example_lines)
         rendered = template.render(**data)
         with open(file_name, 'w') as file:
-            file.write(rendered.encode("utf-8"))
+            file.write(rendered)
 
     def _next_field(self, r, c, is_transposed=False):
         if is_transposed:
@@ -444,11 +445,11 @@ class CsvDeploymentConverter(object):
 
     def _output(self, msg, *args):
         if self.has_output:
-            print msg % args
+            print(msg % args)
 
     def _debug(self, msg, *args):
         if self.has_debug:
-            print msg % args
+            print(msg % args)
 
 
 def main():
@@ -469,7 +470,7 @@ def main():
         try:
             converter.convert(csv_file, deployment_name)
         except Exception as e:
-            print str(e)
+            print(str(e))
             exit(2)
 
 

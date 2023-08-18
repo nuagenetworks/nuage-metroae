@@ -11,6 +11,7 @@
     warn: no
   register: rpm_check
   ignore_errors: True
+  changed_when: False
 
 - name: Install the packages for Portal
   yum:
@@ -21,6 +22,17 @@
       - wget
     state: latest # noqa 403
   when: rpm_check.rc == 1
+  vars:
+    ansible_python_interpreter: /usr/bin/python2
+
+- block: 
+  - name: Removing old version of Docker
+    command: yum remove docker -y
+
+  - name: Removing conflicting repo
+    command: yum remove -y docker-common
+
+  when: target_server_type is match("openstack")
 
 - name: Add Docker repository
   yum_repository:
@@ -35,6 +47,8 @@
   yum:
     name: "3:docker-ce-18.09.0-3.el7.x86_64"
     state: present
+  vars:
+    ansible_python_interpreter: /usr/bin/python2
 
 - name: Enable and start Docker
   service:

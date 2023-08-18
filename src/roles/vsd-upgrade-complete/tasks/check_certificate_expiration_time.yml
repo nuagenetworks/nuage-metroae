@@ -1,0 +1,30 @@
+- name: Check Certificates Expiration Time
+  shell: "{{ check_certificate_expiration_time_command }} | grep ocspsigner"
+  register: certificate_expiration_time
+  remote_user: "{{ vsd_default_username }}"
+
+- name: Validate ocspsigner user is present
+  assert:
+    that: certificate_expiration_time.stdout is search('ocspsigner')
+    fail_msg: "There is no ocspsigner user"
+
+- name: Get timestamp from the system
+  shell: "date +%Y-%m-%d%H:%M:%S"
+  register: tstamp
+  remote_user: "{{ vsd_default_username }}"
+
+- name: Extracting Current date and time from timestamp
+  set_fact:
+   cur_date: "{{ tstamp.stdout[0:10]}}"
+   cur_time: "{{ tstamp.stdout[10:]}}"
+   cur_date_time: "{{ tstamp.stdout[0:10]}} {{ tstamp.stdout[10:]}}"
+   ocspsigner_date_time: "{{ certificate_expiration_time.stdout.split('\t')[2] }}"
+
+- name: Days remaining until certificate expires
+  set_fact:
+   time_diff: "{{ ( ((ocspsigner_date_time | to_datetime) - (cur_date_time | to_datetime)).total_seconds() / (3600*24) ) | int }}"
+
+- name: Ensuring certificate is unexpired
+  assert:
+    that: (time_diff | int) > 1
+    fail_msg: "The certification is expired"

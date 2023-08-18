@@ -25,9 +25,12 @@
   nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json }}\n"
   delegate_to: localhost
 
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}' # noqa 306
-  register: vsd_version
+- block:
+
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Write VSD version separator to report file

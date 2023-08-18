@@ -14,13 +14,9 @@
     ssh_host: "{{ mgmt_ip }}"
     host_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
-- name: Clean known_hosts (ignoring errors)
-  known_hosts:
-    name: "{{ mgmt_ip }}"
-    state: absent
-  delegate_to: localhost
-  no_log: True
-  ignore_errors: True
+- name: Stats only VM
+  set_fact:
+    stats_only_vm: "{{ (groups['stats_only_vsds'] is defined) and (inventory_hostname in groups['stats_only_vsds']) }}"
 
 - import_tasks: report_start.yml
 
@@ -83,10 +79,12 @@
 
   when: vsd_ran_disk_performance_test | default(False)
 
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'         # noqa 306
-  register: vsd_version
-  changed_when: False
+- block:
+
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Get configured VSD Hostname
@@ -103,6 +101,10 @@
     that: "hostname_output.stdout is search('{{ inventory_hostname }}')"
     msg: "Configured VSD hostname does not match expected VSD hostname"
 
+- name: Write VSD hostname to report file
+  nuage_append: filename="{{ report_path }}" text="VSD Hostname {{ hostname_output.stdout }}\n"
+  delegate_to: localhost
+
 - name: Write VSD version to json file
   nuage_append: filename="{{ report_path }}" text="VSD Version {{ vsd_version.stdout | to_nice_json }}\n"
   delegate_to: localhost
@@ -115,9 +117,6 @@
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-- name: Print network config when verbosity >= 1
-  debug: var=net_conf.info verbosity=1
 
 - name: Write network config separator to report file
   nuage_append: filename="{{ report_path }}" text="-----VSD Network Config-----\n"
@@ -191,89 +190,85 @@
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Execute list_p1db command on VSD(s)
-  shell: "{{ p1db_cmd }}"  # noqa 305
-  changed_when: True
-  register: list_p1db_output
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+- block:
 
-- name: Print ejabberd list_p1db output when verbosity >= 1
-  debug: var=list_p1db_output verbosity=1
+  - name: Execute list_p1db command on VSD(s)
+    shell: "{{ p1db_cmd }}"  # noqa 305
+    changed_when: True
+    register: list_p1db_output
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Create local variable with p1db output to json
-  set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
+  - name: Create local variable with p1db output to json
+    set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
 
-- name: Write list_p1db command separator to report file
-  nuage_append: filename="{{ report_path }}" text="-----Result from {{ p1db_cmd }}-----\n"
-  delegate_to: localhost
+  - name: Write list_p1db command separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Result from {{ p1db_cmd }}-----\n"
+    delegate_to: localhost
 
-- name: Write p1bd JSON to file
-  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
-  delegate_to: localhost
+  - name: Write p1bd JSON to file
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
+    delegate_to: localhost
 
-- name: Execute list_cluster command on VSD(s)
-  shell: "{{ ejabber_cluster_list_command }}"  # noqa 305
-  changed_when: True
-  register: list_cluster_output
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  - name: Execute list_cluster command on VSD(s)
+    shell: "{{ ejabber_cluster_list_command }}"  # noqa 305
+    changed_when: True
+    register: list_cluster_output
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Print ejabberd list_cluster_output when verbosity >= 1
-  debug: var=list_cluster_output verbosity=1
+  - name: Create local variable with ejabberd cluster output to json
+    set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
 
-- name: Create local variable with ejabberd cluster output to json
-  set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
+  - name: Write ejabberd cluster output separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Result from executing {{ ejabber_cluster_list_command }}-----\n"
+    delegate_to: localhost
 
-- name: Write ejabberd cluster output separator to report file
-  nuage_append: filename="{{ report_path }}" text="-----Result from executing {{ ejabber_cluster_list_command }}-----\n"
-  delegate_to: localhost
+  - name: Write cluster JSON to file
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
+    delegate_to: localhost
 
-- name: Write cluster JSON to file
-  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
-  delegate_to: localhost
+  - name: Execute ejabberd_connected_users_command command on VSD(s)
+    shell: "{{ ejabberd_connected_users_command }}"  # noqa 305
+    register: user_list
+    changed_when: True
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Execute ejabberd_connected_users_command command on VSD(s)
-  shell: "{{ ejabberd_connected_users_command }}"  # noqa 305
-  register: user_list
-  changed_when: True
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  - name: Create local variable with ejabberd connected users to json
+    set_fact: ejabberd_users_json="{{ user_list.stdout|ejabberd_clients_to_json }}"
 
-- name: Print ejabberd connected_users output when verbosity >= 1
-  debug: var=user_list verbosity=1
+  - name: Write connected_users output separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results from executing {{ ejabberd_connected_users_command }}-----\n"
+    delegate_to: localhost
 
-- name: Create local variable with ejabberd connected users to json
-  set_fact: ejabberd_users_json="{{ user_list.stdout|ejabberd_clients_to_json }}"
+  - name: Write users JSON to file
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
+    delegate_to: localhost
 
-- name: Write connected_users output separator to report file
-  nuage_append: filename="{{ report_path }}" text="-----Results from executing {{ ejabberd_connected_users_command }}-----\n"
-  delegate_to: localhost
+  - name: Verify connected VSCs
+    assert:
+      that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
+      msg: "{{ hostvars[item].xmpp.username }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+    with_items: "{{ groups['vscs'] }}"
+    when:
+      - groups['vscs'] is defined
+      - groups['vscs']
+      - not postdeploy_only | default('False')
+      - not skip_vsc | default('False')
 
-- name: Write users JSON to file
-  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
-  delegate_to: localhost
+  when: not stats_only_vm
 
-- name: Verify connected VSCs
-  assert:
-    that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
-    msg: "{{ hostvars[item].xmpp.username }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-  with_items: "{{ groups['vscs'] }}"
-  when:
-    - groups['vscs'] is defined
-    - groups['vscs']
-    - not postdeploy_only | default('False')
-    - not skip_vsc | default('False')
 
 - name: Get VSD deployment mode
   include_role:
@@ -298,7 +293,7 @@
     assert:
       that: "user_list.stdout is search('keyserver@{{ vsd_fqdn }}')"
       msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  when: vsd_sa_or_ha is match('ha')
+  when: vsd_sa_or_ha is match('ha') and not statistics_only | default(false)
 
 - name: Get monit summary for vsd processes
   vsd_monit:
@@ -329,11 +324,11 @@
     retries: 15
     delay: 60
     until: health_status.status in [200,503] and health_status.json[0].status != 'BAD'
-    ignore_errors: yes
+    ignore_errors: True
 
   - name: Check the HTTP response of the health status query
     assert:
-      that: health_status.status in [200,503]
+      that: health_status.status in [200]
       fail_msg: "VSD API health status check failed: '{{ health_status.msg | default('Empty') }}'"
 
   - name: Verify the HTTP response VSD is healthy
@@ -353,25 +348,11 @@
   - block:
 
     - name: Verify that JMS gateway is reachable on Master Node
-      uri:
-        url: https://{{ jms_master_hostname }}:61619
-        method: GET
-        user: "{{ vsd_auth.username }}"
-        password: "{{ vsd_auth.password }}"
-        status_code: 200
-        validate_certs: False
-      until: webresult.status == 200
+      wait_for:
+        host: "{{ jms_master_hostname }}"
+        port: 61619
       retries: 15
       delay: 60
-      register: webresult
-      delegate_to: localhost
-
-    - name: Write JMS Gateway accessibility separator to report file
-      nuage_append: filename="{{ report_path }}" text="-----Results of verifying JMS gateway accessibility from master node-----\n"
-      delegate_to: localhost
-
-    - name: Write web interface result
-      nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json }}\n"
       delegate_to: localhost
 
     when: jms_master_hostname is defined and jms_master_hostname
@@ -403,43 +384,168 @@
   register: java_home
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
+- name: Write java home path
+  nuage_append: filename="{{ report_path }}" text="JAVA_HOME = {{ java_home.stdout }}\n"
+  delegate_to: localhost
+
+
 - block:
 
   - name: Verify keystore pass is set
     command: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.keystore -storepass {{ keyStorePwd }} -list"
+    register: keystore_pass_check
+    when: keyStorePwd is defined
+
+  - name: Write keystore password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying if keystore password is set-----\n"
+    delegate_to: localhost
+    when: keyStorePwd is defined
+
+  - name: Write keystore password check result
+    nuage_append: filename="{{ report_path }}" text="{{ keystore_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: keyStorePwd is defined
 
   - name: Verify truststore pass is set
     command: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.truststore -storepass {{ trustStorePwd }} -list"
+    register: truststore_pass_check
+    when: trustStorePwd is defined
+
+  - name: Write truststore password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying truststore password-----\n"
+    delegate_to: localhost
+    when: trustStorePwd is defined
+
+  - name: Write truststore password check result
+    nuage_append: filename="{{ report_path }}" text="{{ truststore_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: trustStorePwd is defined
 
   - name: Verify keyserver pass is set
     command: "keytool -keystore /opt/vsd/jboss/standalone/configuration/keyserver.jks -storepass {{ keyServerStorePwd }} -list"
+    register: keyserver_pass_check
+    when: keyServerStorePwd is defined
+  
+  - name: Write keyserver password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying keyserver password-----\n"
+    delegate_to: localhost
+    when: keyServerStorePwd is defined
+
+  - name: Write keyserver password check result
+    nuage_append: filename="{{ report_path }}" text="{{ keyserver_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: keyServerStorePwd is defined
 
   - name: Verify jrestore pass is set for version
     command: "keytool -keystore {{ java_home.stdout }}/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
-    when: jreStorePwd is defined
+    register: jrestore_pass_check
+    when:
+      - jreStorePwd is defined
+      - vsd_major_version|int < 6
+
+  - name: Write jrestore password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying jrestore password-----\n"
+    delegate_to: localhost
+    when:
+      - jreStorePwd is defined
+      - vsd_major_version|int < 6
+
+  - name: Write jrestore password check result
+    nuage_append: filename="{{ report_path }}" text="{{ jrestore_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
+    when:
+      - jreStorePwd is defined
+      - vsd_major_version|int < 6
 
   - name: Verify cnauser pass is set
     command: "mysql -ucnauser -p{{ cnaPwd }} -e 'select 1'"
+    register: cnauser_pass_check
+    when: cnaPwd is defined
+
+  - name: Write cnauser password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying cnauser password-----\n"
+    delegate_to: localhost
+    when: cnaPwd is defined
+
+  - name: Write cnauser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ cnauser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: cnaPwd is defined
 
   - name: Verify ejbcauser pass is set
     command: "mysql -uejbcauser -p{{ ejbcaPwd }} -e 'select 1'"
+    register: ejbcauser_pass_check
+    when: ejbcaPwd is defined
+
+  - name: Write ejbcauser password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying ejbcauser password-----\n"
+    delegate_to: localhost
+    when: ejbcaPwd is defined
+
+  - name: Write ejbcauser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ ejbcauser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: ejbcaPwd is defined
 
   - name: Verify amquser pass is set
     command: "mysql -uamquser -p{{ ampPwd }} -e 'select 1'"
+    register: amquser_pass_check
+    when: ampPwd is defined
+
+  - name: Write amquser password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying amquser password-----\n"
+    delegate_to: localhost
+    when: ampPwd is defined
+
+  - name: Write amquser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ amquser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: ampPwd is defined
 
   - name: Verify adminuser pass is set
     command: "mysql -udbadmin -p{{ adminPwd }} -e 'select 1'"
+    register: adminuser_pass_check
+    when: adminPwd is defined
+
+  - name: Write adminuser password  check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying adminuser password-----\n"
+    delegate_to: localhost
+    when: adminPwd is defined
+
+  - name: Write adminuser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ adminuser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: adminPwd is defined
 
   - name: Verify monituser pass is set
     command: "mysql -umonituser -p{{ monitPwd }} -e 'select 1'"
+    register: monituser_pass_check
     when: monitPwd is defined
+
+  - name: Write monituser password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying monituser password-----\n"
+    delegate_to: localhost
+    when: monitPwd is defined
+
+  - name: Write monituser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ monituser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
+    when: monitPwd is defined
+
+- block:
+
+  - name: Verify the Memory and CPU Usages
+    command: "monit status '{{ inventory_hostname }}' "
+    register: memory_cpu_usage
+
+  - name: Write the Memory and CPU usage to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of Memory & CPU usgage check-----\n"
+    delegate_to: localhost
+
+  - name: Write Memory and  CPU Usages result
+    nuage_append: filename="{{ report_path }}" text="{{ item }}\n"
+    with_items: "{{ memory_cpu_usage.stdout_lines[2:9] }}"
+    delegate_to: localhost
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"

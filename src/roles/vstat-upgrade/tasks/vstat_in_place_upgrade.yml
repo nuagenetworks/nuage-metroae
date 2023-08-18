@@ -6,43 +6,54 @@
     vsd_hostname: "{{ vsd_fqdn }}"
   run_once: true
 
-- name: When HA
+- name: Set variable for upgrade versions
+  set_fact:
+    upgrade_60_2010:
+      "{{ upgrade_from_version|upper|replace('R','') is search('6.0.') and upgrade_to_version|upper|replace('R','') is search('20.10.') }}"
+
+- name: When not upgrade from 6.0 to 20.10
   block:
 
-  - name: Disable shard allocation
-    uri:
-      url: "{{ disable_shard_url }}"
-      method: PUT
-      headers:
-        Content-Type: "application/json"
-      body: "{{ lookup('file', 'disable_shard.json') }}"
-      body_format: json
-      timeout: 300
-    retries: 20
-    delay: 30
-    register: result
-    until: "'status' in result and result.status == 200"
+  - name: When HA
+    block:
 
-  - name: Perform sync flush
-    command:
-      cmd: "curl -XPOST 'localhost:9200/_flush/synced?pretty'"
-      warn: no
+    - name: Disable shard allocation
+      uri:
+        url: "{{ disable_shard_url }}"
+        method: PUT
+        headers:
+          Content-Type: "application/json"
+        body: "{{ lookup('file', 'disable_shard.json') }}"
+        body_format: json
+        timeout: 300
+      retries: 20
+      delay: 30
+      register: result
+      until: "'status' in result and result.status == 200"
 
-  run_once: true
-  when: vstat_sa_or_ha is match('ha')
+    - name: Perform sync flush
+      command:
+        cmd: "curl -XPOST 'localhost:9200/_flush/synced?pretty'"
+        warn: no
 
-- name: Check indices health before migration
-  check_url_response_in_each_line:
-    url: "{{ indicies_health_url }}"
-    search_string: "green"
-    timeout_seconds: 300
-    test_interval_seconds: 30
-  run_once: true
+    run_once: true
+    when:
+      - vstat_sa_or_ha is match('ha')
 
-- name: Disable elasticsearch service
-  service:
-    name: elasticsearch
-    state: stopped
+  - name: Check indices health before migration
+    check_url_response_in_each_line:
+      url: "{{ indicies_health_url }}"
+      search_string: "green"
+      timeout_seconds: 300
+      test_interval_seconds: 30
+    run_once: true
+
+  - name: Disable elasticsearch service
+    service:
+      name: elasticsearch
+      state: stopped
+
+  when: not upgrade_60_2010
 
 - name: Copy upgrade bundle to vstat node(s)
   copy: src={{ vstat_upgrade_scripts_path }}/{{ vstat_upgrade_scripts_file }}
@@ -53,109 +64,114 @@
   shell: "/root/{{ vstat_upgrade_scripts_file }}"       # noqa 305
   changed_when: True
 
-- name: When primary/backup nodes are defined
+- name: When not upgrade from 6.0 to 20.10.R1
   block:
 
-  - name: Figure out Active ES cluster
-    command: crontab -l
-    register: crontabOutput
-    ignore_errors: true
+  - name: When primary/backup nodes are defined
+    block:
 
-  - name: Skip execute VSD script for backup vstat
-    set_fact:
-      run_command_on_vsd: false
-    when: crontabOutput.stdout.find("curator_snapshot") == -1
+    - name: Figure out Active ES cluster
+      command: crontab -l
+      register: crontabOutput
+      ignore_errors: true
 
-  when:
-    - groups['primary_vstats'] is defined
-    - groups['backup_vstats'] is defined
+    - name: Skip execute VSD script for backup vstat
+      set_fact:
+        run_command_on_vsd: false
+      when: crontabOutput.stdout.find("curator_snapshot") == -1
 
+    when:
+      - groups['primary_vstats'] is defined
+      - groups['backup_vstats'] is defined
 
-- name: When SA and we are to execute commands on the VSD
-  block:
+  - name: When SA and we are to execute commands on the VSD
+    block:
 
-  - name: Execute VSTAT standalone script
-    import_tasks: execute_sa_script.yml
-    run_once: true
-
-  rescue:
-    - name: Wait for shard count go down to zero and status to turn green
-      import_tasks: get_health_status.yml
-      run_once: true
-
-    - name: Check ES Status
-      fail: msg="Elasticsearch upgrade failed, status is not green"
-      when: es_status.json.status != 'green'
-
-    - name: Check ES Unassigned Shards
-      fail: msg="Elasticsearch upgrade failed, unassigned_shards != 0"
-      when: es_health.json.unassigned_shards != 0
-
-    - name: Execute VSTAT standalone script after status turns green
+    - name: Execute VSTAT standalone script
       import_tasks: execute_sa_script.yml
       run_once: true
 
-  when:
-    - vstat_sa_or_ha is match('sa')
-    - run_command_on_vsd | default(true)
+    rescue:
+      - name: Wait for shard count go down to zero and status to turn green
+        import_tasks: get_health_status.yml
+        run_once: true
 
-- name: When HA and we are to execute commands on the VSD
-  block:
+      - name: Check ES Status
+        fail: msg="Elasticsearch upgrade failed, status is not green"
+        when: es_status.json.status != 'green'
 
-  - name: Execute VSTAT clustered script
-    import_tasks: execute_ha_script.yml
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    run_once: true
+      - name: Check ES Unassigned Shards
+        fail: msg="Elasticsearch upgrade failed, unassigned_shards != 0"
+        when: es_health.json.unassigned_shards != 0
 
-  rescue:
-    - name: Wait for shard count go down to zero and status to turn green
-      import_tasks: get_health_status.yml
-      run_once: true
+      - name: Execute VSTAT standalone script after status turns green
+        import_tasks: execute_sa_script.yml
+        run_once: true
 
-    - name: Check ES Status
-      fail: msg="Elasticsearch upgrade failed, status is not green"
-      when: es_status.json.status != 'green'
+    when:
+      - vstat_sa_or_ha is match('sa')
+      - run_command_on_vsd | default(true)
 
-    - name: Check ES Unassigned Shards
-      fail: msg="Elasticsearch upgrade failed, unassigned_shards != 0"
-      when: es_health.json.unassigned_shards != 0
+  - name: When HA and we are to execute commands on the VSD
+    block:
 
-    - name: Execute VSTAT clustered script after status turns green
+    - name: Execute VSTAT clustered script
       import_tasks: execute_ha_script.yml
+      delegate_to: "{{ vsd_hostname_list[0] }}"
       run_once: true
 
-  when:
-    - vstat_sa_or_ha is match('ha')
-    - run_command_on_vsd | default(true)
+    rescue:
+      - name: Wait for shard count go down to zero and status to turn green
+        import_tasks: get_health_status.yml
+        run_once: true
 
-- name: When we have pimary/backup nodes
-  block:
+      - name: Check ES Status
+        fail: msg="Elasticsearch upgrade failed, status is not green"
+        when: es_status.json.status != 'green'
 
-  - name: Update elasticsearch config file
-    lineinfile:
-      line: 'path.repo: ["/mnt/nfs/backup"]'
-      path: /etc/elasticsearch/elasticsearch.yml
+      - name: Check ES Unassigned Shards
+        fail: msg="Elasticsearch upgrade failed, unassigned_shards != 0"
+        when: es_health.json.unassigned_shards != 0
 
-  - name: Restart elastic search
-    service:
-      name: elasticsearch
-      state: restarted
+      - name: Execute VSTAT clustered script after status turns green
+        import_tasks: execute_ha_script.yml
+        run_once: true
 
-  - name: Check to see if elasticsearch restarted
-    command: systemctl status elasticsearch     # noqa 303
-    register: status
-    until: status.stdout.find("active (running)") != -1
-    retries: 5
-    delay: 10
+    when:
+      - vstat_sa_or_ha is match('ha')
+      - run_command_on_vsd | default(true)
 
-  - name: Wait for elasticsearch ports
-    wait_for:
-      port: 9200
+  - name: When we have pimary/backup nodes
+    block:
+
+    - name: Update elasticsearch config file
+      lineinfile:
+        line: 'path.repo: ["/mnt/nfs/backup"]'
+        path: /etc/elasticsearch/elasticsearch.yml
+
+    - name: Restart elastic search
+      service:
+        name: elasticsearch
+        state: restarted
+
+    - name: Check to see if elasticsearch restarted
+      command: systemctl status elasticsearch     # noqa 303
+      register: status
+      until: status.stdout.find("active (running)") != -1
+      retries: 5
       delay: 10
 
+    - name: Wait for elasticsearch ports
+      wait_for:
+        port: 9200
+        delay: 10
+
+    when:
+      - groups['primary_vstats'] is defined
+      - groups['backup_vstats'] is defined
+
   when:
-    - groups['primary_vstats'] is defined
-    - groups['backup_vstats'] is defined
+    - not upgrade_60_2010
 
 - name: Get ES version
   uri:
@@ -166,15 +182,9 @@
 
 - name: Assert that we are running ES version 6.8.0 for 6.0.3 and newer
   assert:
-    that: es_version.json.version.number is version('6.8.0', '==')
+    that: es_version.json.version.number is version('6.8.0', '>=')
     msg: Expecting ES version 6.8.0, found ES version "{{ es_version.json.version.number }}, quitting."
   when: upgrade_to_version is version('6.0.3', '>=')
-
-- name: Assert that we are running ES version 6.7.0 for 6.0.1 and 6.0.2
-  assert:
-    that: es_version.json.version.number is version('6.7.0', '==')
-    msg: Expecting ES version 6.7.0, found ES version "{{ es_version.json.version.number }}, quitting."
-  when: (upgrade_to_version is version('6.0.1', '==')) or (upgrade_to_version is version('6.0.2', '=='))
 
 - name: When upgrade_to_version >= 6.0.1
   block:
@@ -247,19 +257,20 @@
       test_interval_seconds: 30
     run_once: true
 
-  when: upgrade_to_version is version('6.0.1', '>=')
+  when:
+    - upgrade_to_version is version('6.0.1', '>=')
+    - not upgrade_60_2010
+    - (groups['data_vstats'] is not defined or inventory_hostname not in groups['data_vstats'])
 
-- name: When upgrade_to_version < 6.0.1
-  block:
-
-  - name: Assert that we are running ES version 5.5.0
-    assert:
-      that: es_version.json.version.number is version('5.5.0', '==')
-      msg: Expecting ES version 5.5.0, found ES version "{{ es_version.json.version.number }}, quitting."
-
+- name: Assert that we are running ES version 5.5.0
+  assert:
+    that: es_version.json.version.number is version('5.5.0', '==')
+    msg: Expecting ES version 5.5.0, found ES version "{{ es_version.json.version.number }}, quitting."
   when: upgrade_to_version is version('6.0.1', '<')
 
 - name: Restart Elasticsearch service
   service:
     name: elasticsearch
     state: restarted
+  when:
+    - not upgrade_60_2010

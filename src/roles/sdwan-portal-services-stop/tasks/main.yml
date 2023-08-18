@@ -1,0 +1,53 @@
+- name: Wait for PORTAL VM ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
+    host_username: "{{ portal_default_username }}"
+
+- block:
+
+  - name: Ensure other nodes have been stopped
+    shell: "/opt/vnsportal/cluster_check.sh {{ portal_database_default_username }} {{ portal_database_default_password }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    register: cluster_check
+    until: cluster_check.stdout.find(portal1.mgmt_ip) != -1 and cluster_check.stdout.find(portal2.mgmt_ip) == -1 and cluster_check.stdout.find(portal3.mgmt_ip) == -1 and cluster_check.stdout|regex_findall('ON')|length == 2
+    retries: 10
+    delay: 5
+    when: inventory_hostname == portal1.hostname
+
+  - name: Stop Portal services
+    shell: /opt/vnsportal/stop.sh
+
+  - block:
+
+    - name: Get any remaining docker container IDs
+      shell: docker ps -qa
+      register: all_container_ids
+
+    - name: Stop any remaining docker containers (ignoring errors)
+      shell: "docker stop {{ item }}"
+      with_items: "{{ all_container_ids.stdout_lines }}"
+      ignore_errors: yes
+
+    - name: Delete any remaining docker containers
+      shell: "docker rm {{ item }}"
+      with_items: "{{ all_container_ids.stdout_lines }}"
+
+    - block:
+
+      - name: Get all docker image IDs
+        shell: docker images -q
+        register: all_image_ids
+
+      - name: Delete the docker images
+        shell: "docker rmi -f {{ item }}"
+        with_items: "{{ all_image_ids.stdout_lines }}"
+
+      - name: Delete the vnsportal directory
+        shell: rm -rf /opt/vnsportal
+
+      when: uninstall_portal|default(False)
+
+  remote_user: "{{ portal_default_username }}"

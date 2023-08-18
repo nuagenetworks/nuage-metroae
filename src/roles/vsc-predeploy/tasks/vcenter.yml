@@ -18,7 +18,8 @@
 
   - name: Configure vCenter path
     set_fact:
-      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}\
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/\
+        {{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/' | urlencode, '') }}{{ vcenter.cluster }}\
         {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference | urlencode, '') }}\
         {{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool | urlencode, '') }}"
 
@@ -37,6 +38,11 @@
         {% endif %}
         -dm=thin
         -ds={{ vcenter.datastore }}
+        --numberOfCpus:'*'={{ vsc_cpu_cores }}
+        --memorySize:'*'={{ vsc_ram  | int * 1024}}
+        {% if vsc_fallocate_size_gb != 0 %}
+        --diskSize:'*'={{ vsc_fallocate_size_gb | int * 1024 }}
+        {% endif %}
         {% if vcenter.vmfolder is defined %}
         -vf={{ vcenter.vmfolder }}
         {% endif %}
@@ -92,7 +98,7 @@
       tasks_from: vcenter-deploy-image
 
   - name: Finding VM folder
-    connection: local
+    delegate_to: localhost
     vmware_guest_find:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -102,13 +108,13 @@
     register: vsc_vm_folder
 
   - name: Gathering info on VM
-    connection: local
+    delegate_to: localhost
     vmware_guest_info:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
+      folder: "{{ vsc_vm_folder['folders'][0] }}"
       name: "{{ vmname }}"
       validate_certs: no
     register: vsc_vm_facts
@@ -122,7 +128,7 @@
   - debug: var=uuid
 
   - name: Turn on autostart
-    connection: local
+    delegate_to: localhost
     vmware_autostart:
       name: "{{ vm_name }}"
       uuid: "{{ uuid }}"
@@ -138,7 +144,7 @@
       msg: "VSC VM {{ vmname }} is not created"
 
   - name: Wait for VSC ssh to be ready
-    connection: local
+    delegate_to: localhost
     wait_for:
       port: "22"
       host: "{{ mgmt_ip }}"

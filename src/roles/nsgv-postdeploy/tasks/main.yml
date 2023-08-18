@@ -1,3 +1,5 @@
+- meta: reset_connection
+
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
@@ -12,6 +14,8 @@
   set_fact:
     version_expr: '{ split($1, version, "-"); print version[4] }'
 
+- meta: reset_connection
+
 - name: Get output of 'show version'
   sros_command:
     commands:
@@ -24,13 +28,16 @@
   register: sh_version
 
 - name: Parse version
-  shell: "echo '{{ sh_version.stdout[0] }}' | awk '{{ version_expr }}'"
+  shell: set -o pipefail && echo '{{ sh_version.stdout[0] }}' | awk '{{ version_expr }}'
   delegate_to: localhost
   register: vsc_version
 
-- debug: var=vsc_version.stdout verbosity=1
-
 - block:
+
+  - name: Get current VSD API version
+    include_role:
+      name: common
+      tasks_from: get-current-vsd-api-version
 
   - name: Format VSD auth for VSPK module
     set_fact:
@@ -39,10 +46,11 @@
         api_password: "{{ vsd_auth.password }}"
         api_enterprise: "{{ vsd_auth.enterprise }}"
         api_url: "{{ vsd_auth.api_url }}"
+        api_version: "{{ current_api_version }}"
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: Get Enterprise from VSD
-    connection: local
+    delegate_to: localhost
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: Enterprise
@@ -52,7 +60,7 @@
     register: nuage_enterprise
 
   - name: Get NSGateway from VSD
-    connection: local
+    delegate_to: localhost
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: NSGateway
@@ -66,7 +74,9 @@
     retries: 40
     delay: 30
 
-  when: bootstrap_method == 'zfb_metro'
+  when: bootstrap_method == 'zfb_metro' or bootstrap_method == 'zfb_external'
+
+- meta: reset_connection
 
 - name: Get output of 'show vswitch-controller vswitches detail' for version less than 6.0.1
   sros_command:
@@ -78,10 +88,13 @@
       password: "{{ vsc_password | default(vsc_default_password) }}"
   delegate_to: localhost
   register: nsg_detail
-  until: "nsg_detail.stdout[0] | regex_search('JSON Conn. State\\s+: Up') and nsg_detail.stdout[0] | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
+  until: "nsg_detail.stdout[0] | regex_search('JSON Conn. State\\s+: Up') and nsg_detail.stdout[0] \
+         | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
   retries: 40
   delay: 30
-  when: "bootstrap_method != 'none' and vsc_version.stdout is version('6.0.1', '<')"
+  when: "(bootstrap_method != 'none') and (bootstrap_method != 'activation_link') and (vsc_version.stdout is version('6.0.1', '<'))"
+
+- meta: reset_connection
 
 - name: Get output of 'show vswitch-controller vswitches detail' for version greater than 6.0.1
   sros_command:
@@ -93,7 +106,8 @@
       password: "{{ vsc_password | default(vsc_default_password) }}"
   delegate_to: localhost
   register: nsg_detail
-  until: "nsg_detail.stdout[0] | regex_search('Cntrl. Conn. state\\s+: ready') and nsg_detail.stdout[0] | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
+  until: "nsg_detail.stdout[0] | regex_search('Cntrl. Conn. state\\s+: ready') and nsg_detail.stdout[0] \
+         | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
   retries: 40
   delay: 30
-  when: "bootstrap_method != 'none' and vsc_version.stdout is version('6.0.1', '>=')"
+  when: "(bootstrap_method != 'none') and (bootstrap_method != 'activation_link') and (vsc_version.stdout is version('6.0.1', '>='))"

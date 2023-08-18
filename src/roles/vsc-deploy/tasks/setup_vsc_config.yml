@@ -14,17 +14,57 @@
 - name: delegate to localhost
   block:
 
+  - meta: reset_connection
+
+  - name: Wait for VSC ssh to be ready before config
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh-port
+    vars:
+      ssh_host: "{{ hostname }}"
+      ssh_timeout_seconds: 600
+      ssh_password: "{{ vsc_creds.password }}"
+      ssh_user: "{{ vsc_creds.username }}"
+      check_login: True
+
+  - name: Set awk expression for parse the version
+    set_fact:
+      version_expr: '{ split($1, version, "-"); print version[4] }'
+
+  - name: Get output of 'show version'
+    sros_command:
+      commands:
+        - "show version"
+      provider:
+        host: "{{ groups['vscs'][0] }}"
+        username: "{{ vsc_username | default(vsc_default_username) }}"
+        password: "{{ vsc_password | default(vsc_default_password) }}"
+    delegate_to: localhost
+    register: sh_version
+
+  - name: Parse version
+    shell: set -o pipefail && echo '{{ sh_version.stdout[0] }}' | awk '{{ version_expr }}'
+    delegate_to: localhost
+    register: vsc_version
+
   - name: Create temporary folder for vsc config
     file:
       path: "{{ tmp_dir_name }}"
       state: directory
+
+  - name: debug for testing
+    debug: var=vsc_version.stdout
 
   - name: Setup VSC temporary configuration files
     template:
       src: "{{ config_template }}"
       backup: no
       dest: "{{ tmp_dir_name }}/{{ config_file_name }}"
-    when: not restore_vsc | default(False)
+    vars:
+      vsc_check_version: "{{ vsc_version.stdout}}"
+    when:
+      - not restore_vsc | default(False)
+      - not override_vsc_config
 
   - name: Restore VSC
     block:
@@ -54,6 +94,8 @@
 
     when: restore_vsc | default(False)
 
+  - meta: reset_connection
+
   - name: Wait for VSC ssh to be ready before config
     include_role:
       name: common
@@ -71,37 +113,73 @@
     when: ssh_proxy_configuration is defined
 
   - name: Copy VSC config file to the VSC
-    connection: local
+    delegate_to: localhost
     shell: >-
-      sshpass -p{{ vsc_password | default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+      sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
       {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: not mgmt_ip | ipv6
+    when:
+      - not mgmt_ip | ipv6
+      - not override_vsc_config
 
   - name: Copy VSC config file to the VSC
-    connection: local
+    delegate_to: localhost
     shell: >-
-      sshpass -p{{ vsc_password | default(vsc_default_password) }} scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+      sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
       {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }}
       {{ vsc_username|default(vsc_default_username) }}@{{ '[' }}{{ mgmt_ip }}{{ ']' }}:
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: mgmt_ip | ipv6
+    when:
+      - mgmt_ip | ipv6
+      - not override_vsc_config
+
+  - name: Override using user provided config
+    block:
+    - name: Copy user provided config file for VSC(IPv4)
+      delegate_to: localhost
+      shell: >-
+        sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        {{ proxy_conf | default('') }} {{ item }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
+      loop: "{{ vsc_config_file_paths }}"
+      when: not mgmt_ip | ipv6
+
+    - name: Copy user provided config file for VSC(IPv6)
+      delegate_to: localhost
+      shell: >-
+        sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        {{ proxy_conf | default('') }} {{ item }}
+        {{ vsc_username|default(vsc_default_username) }}@{{ '[' }}{{ mgmt_ip }}{{ ']' }}:
+      loop: "{{ vsc_config_file_paths }}"
+      when: mgmt_ip | ipv6
+
+    - meta: reset_connection
+
+    - name: Save user provided config file
+      sros_command:
+        commands:
+          - exec cf1:\{{ item | basename }}
+          - admin save
+        provider: "{{ vsc_creds }}"
+      loop: "{{ vsc_config_file_paths }}"
+      delegate_to: localhost
+
+    when: override_vsc_config
 
   - name: Copy BOF on restore
     block:
 
     - name: Copy VSC BOF file to the VSC
-      connection: local
+      delegate_to: localhost
       shell: >-
-        sshpass -p{{ vsc_password | default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
         {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ bof_file_name }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       when: not mgmt_ip | ipv6
 
     - name: Copy VSC BOF file to the VSC
-      connection: local
+      delegate_to: localhost
       shell: >-
-        sshpass -p{{ vsc_password | default(vsc_default_password) }} scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
         {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ bof_file_name }}
         {{ vsc_username|default(vsc_default_username) }}@{{ '[' }}{{ mgmt_ip }}{{ ']' }}:
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
@@ -111,6 +189,8 @@
 
   - name: Execute if not rebooting
     block:
+
+    - meta: reset_connection
 
     - name: Execute VSC basic configuration
       sros_command:
@@ -130,6 +210,8 @@
         check_login: True
       when: enable_hardening | default(True)
 
+    - meta: reset_connection
+
     - name: Save VSC basic configuration
       sros_command:
         commands:
@@ -145,6 +227,8 @@
       pause:
         seconds: 30
 
+    - meta: reset_connection
+
     - name: Register uptime before reboot
       sros_command:
         commands:
@@ -152,12 +236,16 @@
         provider: "{{ vsc_creds }}"
       register: uptime_before_reboot
 
+    - meta: reset_connection
+
     - name: Reboot VSC VM (ignoring errors)
       sros_command:
         commands:
           - admin reboot now
         provider: "{{ vsc_creds }}"
       ignore_errors: true
+
+    - meta: reset_connection
 
     - name: Wait for VSC ssh to be ready
       include_role:
@@ -170,6 +258,8 @@
         ssh_user: "{{ vsc_creds.username }}"
         check_login: True
 
+    - meta: reset_connection
+
     - name: Register uptime after reboot
       sros_command:
         commands:
@@ -179,7 +269,7 @@
 
     - name: Verify reboot happened successfully
       assert:
-        that: "uptime_after_reboot < uptime_before_reboot"
+        that: "uptime_after_reboot.stdout < uptime_before_reboot.stdout"
         fail_msg: "System uptime after reboot step suggests there were issues during reboot. Check log for errors."
 
     when: reboot_vsc | default(true)

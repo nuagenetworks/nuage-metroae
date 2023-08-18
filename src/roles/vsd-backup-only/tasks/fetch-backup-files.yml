@@ -34,18 +34,37 @@
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Remove any old symbolic link to backup location
-  file:
-    path: "{{ metro_backup_root }}/backup-latest-upgrade-vsd"
-    state: absent
-  delegate_to: localhost
+- name: Run for VSD and not VCIN
+  block:
+  - name: Remove any old symbolic link to backup location
+    file:
+      path: "{{ metro_backup_root }}/backup-latest-upgrade-vsd"
+      state: absent
+    delegate_to: localhost
 
-- name: Create symbolic link to backup location
-  file:
-    dest: "{{ metro_backup_root }}/backup-latest-upgrade-vsd"
-    src: "{{ localhost_component_backup_dir }}"
-    state: link
-  delegate_to: localhost
+  - name: Create symbolic link to backup location
+    file:
+      dest: "{{ metro_backup_root }}/backup-latest-upgrade-vsd"
+      src: "{{ localhost_component_backup_dir }}"
+      state: link
+    delegate_to: localhost
+  when: not vcin_backup | default(False)
+
+- name: Run for VCIN backup
+  block:
+  - name: Remove any old symbolic link to backup location
+    file:
+      path: "{{ metro_backup_root }}/backup-latest-upgrade-vcin"
+      state: absent
+    delegate_to: localhost
+
+  - name: Create symbolic link to backup location
+    file:
+      dest: "{{ metro_backup_root }}/backup-latest-upgrade-vcin"
+      src: "{{ localhost_component_backup_dir }}"
+      state: link
+    delegate_to: localhost
+  when: vcin_backup | default(False)
 
 - name: Clean up {{ vsd_backup_dir }} (ignoring errors)
   file:

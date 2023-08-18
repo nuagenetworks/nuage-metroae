@@ -97,7 +97,7 @@ The CIDRs for the VPC, WAN interface, LAN interface and private subnet must be s
 ## 6. Deploy Components
 After you have set up the environment and configured your components, you can use MetroAE to deploy your components with a single command.
 
-    metroae install everything
+    metroae-container install everything
 
 Alternatively, you can deploy individual components or perform individual tasks such as predeploy, deploy and postdeploy. See [DEPLOY.md](DEPLOY.md) for details.
 ## Questions, Feedback, and Contributing  

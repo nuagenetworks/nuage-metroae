@@ -1,9 +1,52 @@
+- name: Set major or minor upgrade flag
+  include_role:
+    name: common
+    tasks_from: set-major-minor-versions.yml
+
+- block:
+
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+
+- name: Block XMPP Connections if patching Ejabberd
+  include_role:
+    name: common
+    tasks_from: block-xmpp-connections
+  vars:
+    block_xmpp_connection: "{{ block_and_allow_xmpp_connection | default(False) }}"
+
 - name: Check monit summary before upgrade
   include_role:
     name: vsd-health
     tasks_from: monit_status
   vars:
     no_report: "True"
+  when: not vsd_install_inplace_upgrade | default (False)
+
+- block:
+
+  - block:
+
+    - name: getting migration scripts path for patch version
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        pattern: "VSD-migration-scripts-*.iso"
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+
+    delegate_to: localhost
+
+
+  - name: setting fact for migration file
+    set_fact:
+      vsd_migration_iso_path: "{{ file_path }}"
+      vsd_migration_iso_file_name: "{{ file_name }}"
+
+  when: vsd_install_inplace_upgrade | default (False)
 
 - block:
 
@@ -11,24 +54,88 @@
     copy: src="{{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}"
         dest=/tmp/
 
-  - name: Create mount point on /media/CDROM
+  - block:
+
+    - name: Create mount point on /media/CDROM
+      file:
+        path: /media/CDROM
+        state: directory
+
+    - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
+      command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM"  # noqa 303
+
+    - name: Upgrade to RHEL 7.9
+      command: /media/CDROM/vsd-patch-20.10.sh -y
+      when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=')
+
+    - name: Check and print what needs to be patched on VSD
+      command: /media/CDROM/vsd-patch.sh -c
+
+    - name: Run the patch
+      command: /media/CDROM/vsd-patch.sh
+      vars:
+        ansible_python_interpreter: "{{ python_location }}"
+
+    - name: Umount the ISO
+      shell: "umount /media/CDROM"
+
+    when: not patch_ejabberd|default(False)
+
+  - block:
+
+    - name: Check if rpm file is defined
+      fail: msg="For upgrade to 20.10.R4+, you are supposed to define vsd_ejabberd_rpm_file variable which is the path to rpm file needed to renew the ejabberd license file for VSD. It should be defined under upgrade.yml"
+      when: vsd_ejabberd_rpm_file is undefined
+
+    - name: Copy ejjaberd license rpm file if it exists
+      copy: src="{{ vsd_ejabberd_rpm_file }}"
+          dest=/tmp/
+
+    - name: Mount VSD-migration-scripts-xxx.iso on /mnt
+      command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /mnt"  # noqa 303
+
+    - name: Create new directory to run upgrade from
+      file:
+        path: /root/upgrade
+        state: directory
+
+    - name: Copy content of the migration ISO to new directory
+      shell:
+        cmd: "cp -r /mnt/* /root/upgrade/"
+
+    - name: Copy the downloaded ejabberd license rpm into Packages directory
+      copy:
+        dest: "/root/upgrade/Packages/"
+        src: "/tmp/ejabberd-4.2002.23-0.x86_64.rpm"
+        remote_src: yes
+
+    - name: Upgrade to RHEL 7.9
+      command: /root/upgrade/vsd-patch-20.10.sh -y
+      when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=')
+
+    - name: Check and print what needs to be patched on VSD
+      command: /root/upgrade/vsd-patch.sh -c
+
+    - name: Run the patch
+      command: /root/upgrade/vsd-patch.sh -y
+      vars:
+        ansible_python_interpreter: "{{ python_location }}"
+
+    - name: Umount the ISO
+      shell: "umount /mnt"
+
+    when: patch_ejabberd|default(False)
+
+  - name: Delete the VSD migration script ISO from VSD's temp directory
     file:
-      path: /media/CDROM
-      state: directory
+      path: /tmp/{{ vsd_migration_iso_file_name }}
+      state: absent
 
-  - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
-    command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM"  # noqa 303
-
-  - name: Check and print what needs to be patched on VSD
-    command: /media/CDROM/vsd-patch.sh -c
-
-  - name: Run the patch
-    command: /media/CDROM/vsd-patch.sh
-
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  become_flags: '-i'
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Check monit summary after upgrade
   include_role:
@@ -36,3 +143,36 @@
     tasks_from: monit_status
   vars:
     no_report: "True"
+
+- name: Run the ejabberd GUI update script
+  command: timeout 60 /opt/vsd/sysmon/ejabberdLicenseExpiryDateUpdater.py
+  when: upgrade_to_version|upper|replace('R','') is version('20.10.7', '>=')
+  ignore_errors: True
+
+- name: Allow XMPP Connections after patching Ejabberd
+  include_role:
+    name: common
+    tasks_from: allow-xmpp-connections
+  vars:
+    allow_xmpp_connection: "{{ block_and_allow_xmpp_connection | default(False) }}"
+
+- block:
+
+  - name: Stats only VM
+    set_fact:
+      stats_only_vm: "{{ (groups['stats_only_vsds'] is defined) and (inventory_hostname in groups['stats_only_vsds']) }}"
+
+  - name: Standby VSDs
+    set_fact:
+      standby_vsds: "{{ (groups['standby_vsds'] is defined) and (inventory_hostname in groups['standby_vsds']) }}"
+
+  - include_role:
+      name: vsd-deploy
+      tasks_from: brand_vsd
+    when:
+      - not standby_vsds
+      - not stats_only_vm
+    vars:
+      vsd_branding_host: "{{ inventory_hostname }}"
+
+  when: branding_zip_file is defined

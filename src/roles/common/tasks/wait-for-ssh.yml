@@ -5,6 +5,11 @@
     proxy_conf:  '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
   when: ssh_proxy_configuration is defined
 
+- name: Get running userinfo for ansible
+  become: false
+  local_action: command whoami
+  register: username_on_the_host
+
 - name: Wait for ssh to be ready
   command: ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ proxy_conf | default('') }} {{ host_username }}@{{ ssh_host }} exit 0
   register: wait_for_ssh_output
@@ -13,3 +18,11 @@
   delegate_to: localhost
   changed_when: wait_for_ssh_output.rc == 0
   delay: "{{ delay | default(10) }}"
+  remote_user: "{{ username_on_the_host }}"
+  become: false
+  ignore_errors: True
+
+- name: Check output of SSH test
+  assert:
+    that: "{{ wait_for_ssh_output.rc }} == 0"
+    msg: "Failed to connect to target_server {{ ssh_host }}. Is passwordless SSH set up?"

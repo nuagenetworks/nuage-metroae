@@ -55,12 +55,12 @@ def verify_ovs_result(ovs_show_result):
     not_connected_list = []
 
     if (not ovs_show_result):
-        print ("Error! OVS show results are empty!")
+        print("Error! OVS show results are empty!")
         sys.exit(1)
 
     for controller_info in get_bridge_info(ovs_show_result):
         if (not controller_info):
-            print ("Error!No controller info found in OVS show results!")
+            print("Error!No controller info found in OVS show results!")
             sys.exit(1)
 
         if (controller_info["connected"] != 'true'):
@@ -99,16 +99,16 @@ if __name__ == '__main__':
     ovs_output_file = args.ovs_output_file
 
     if (not is_valid_ip(args.vrs_ip)):
-        print (" Error! Invalid input: vrs_ip.")
+        print(" Error! Invalid input: vrs_ip.")
         sys.exit(1)
 
     if (not ovs_output_file):
-        print ("Error! Invalid input: ovs_output_file.")
+        print("Error! Invalid input: ovs_output_file.")
         sys.exit(1)
 
     vrs_ip = args.vrs_ip
     if (not os.path.exists(ovs_output_file)):
-        print ("ERROR! Temporary file {0} not found." .format(ovs_output_file))
+        print("ERROR! Temporary file {0} not found." .format(ovs_output_file))
         sys.exit(1)
 
     try:
@@ -120,7 +120,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if (not ovs_show_result):
-        print ("Error! OVS show command results not found.")
+        print("Error! OVS show command results not found.")
         sys.exit(1)
 
     # Verify ovs-vsctl show command results
@@ -131,4 +131,4 @@ if __name__ == '__main__':
     else:
         result = "Error! VRS " + vrs_ip + " did not detect the following controllers:" + str(error_list)
 
-    print result
+    print(result)

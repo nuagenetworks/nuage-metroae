@@ -27,7 +27,7 @@ options:
   vsd_license_file:
     description:
       - Set path to VSD license file.
-    required:True
+    required:False
   vsd_auth:
     description:
       - Credentials for accessing VSD.  Attributes:
@@ -69,6 +69,11 @@ options:
       - Parameters required for an NSG ports for ZFB.  Attributes:
       - network_port.name
       - network_port.physicalName
+      - network_port.vlans:
+        - vlan_value
+        - vsc_infra_profile_name
+        - firstController
+        - secondController
       - access_ports:
         - access_port.name
         - access_port.physicalName
@@ -90,7 +95,7 @@ options:
       - name
       - firstController
       - secondController
-    required:True
+    required:False
 
 '''
 
@@ -131,6 +136,11 @@ EXAMPLES = '''
         network_port:
             name: port1_network
             physicalName: port1
+            vlans:
+                - vlan_value: 242
+                - vsc_infra_profile_name: vsc_infra
+                - firstController: 192.168.1.100
+                - secondController: 192.168.1.101
         access_ports:
             - name: port2_access
               physicalName: port2
@@ -236,8 +246,7 @@ def create_nsg_gateway_template(module, csproot, nsg_infra):
     return nsg_temp
 
 
-def create_vsc_infra_profile(module, csproot):
-    vsc_params = module.params['zfb_vsc_infra']
+def create_vsc_infra_profile(module, csproot, vsc_params):
 
     vsc_infra = csproot.infrastructure_vsc_profiles.get_first(
         "name is '%s'" % vsc_params['name'])
@@ -249,7 +258,7 @@ def create_vsc_infra_profile(module, csproot):
     return vsc_infra
 
 
-def create_nsgv_ports(module, nsg_temp, vsc_infra):
+def create_nsgv_ports(module, nsg_temp, csproot, uplinks):
     port_params = module.params['zfb_ports']
     zfb_constants = module.params['zfb_constants']
 
@@ -264,16 +273,42 @@ def create_nsgv_ports(module, nsg_temp, vsc_infra):
         network_port['portType'] = zfb_constants['network_port_type']
         port_temp = VSPK.NUNSPortTemplate(data=network_port)
         nsg_temp.create_child(port_temp)
-        # Attach vlan0 and vsc profile
-        vlan_temp = VSPK.NUVLANTemplate()
-        vlan_temp.value = '0'
-        vlan_temp.associated_vsc_profile_id = vsc_infra.id
-        port_temp.create_child(vlan_temp)
 
-        uplink = VSPK.NUUplinkConnection()
-        uplink.mode = "Dynamic"
-        uplink.role = "PRIMARY"
-        vlan_temp.create_child(uplink)
+        if 'vlans' in network_port:
+            for vlan in network_port['vlans']:
+                vsc_params = {
+                    'name': vlan['vsc_infra_profile_name'],
+                    'firstController': vlan['firstController']
+                }
+                if 'secondController' in vlan:
+                    vsc_params['secondController'] = vlan['secondController']
+
+                vlan_temp = VSPK.NUVLANTemplate()
+                vlan_temp.value = vlan['vlan_value']
+                if vlan['uplink']:
+                    # Attach vlan and vsc profile
+                    vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
+                    vlan_temp.associated_vsc_profile_id = vsc_infra.id
+                port_temp.create_child(vlan_temp)
+
+                if int(vlan['vlan_value']) in uplinks:
+                    uplink = VSPK.NUUplinkConnection()
+                    uplink.mode = "Dynamic"
+                    uplink.role = "PRIMARY"
+                    vlan_temp.create_child(uplink)
+        else:
+            vsc_params = module.params['zfb_vsc_infra']
+            vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
+            # Attach vlan0 and vsc profile
+            vlan_temp = VSPK.NUVLANTemplate()
+            vlan_temp.value = '0'
+            vlan_temp.associated_vsc_profile_id = vsc_infra.id
+            port_temp.create_child(vlan_temp)
+
+            uplink = VSPK.NUUplinkConnection()
+            uplink.mode = "Dynamic"
+            uplink.role = "PRIMARY"
+            vlan_temp.create_child(uplink)
 
     for access_port in access_ports:
         port_temp = nsg_temp.ns_port_templates.get_first(
@@ -302,7 +337,7 @@ def create_enterprise(csproot, name):
     return enterprise
 
 
-def create_nsg_device(module, csproot, nsg_temp):
+def create_nsg_device(module, csproot, nsg_temp, uplinks):
     nsg_params = module.params['zfb_nsg']
     nsg_infra = module.params['zfb_nsg_infra']
 
@@ -321,6 +356,9 @@ def create_nsg_device(module, csproot, nsg_temp):
                     "personality": "NSG"}
         if nsg_infra["instanceSSHOverride"] == "ALLOWED":
             nsg_data["SSHService"] = nsg_params['ssh_service']
+
+        if len(uplinks) > 1:
+            nsg_data["networkAcceleration"] = "PERFORMANCE"
 
         nsg_dev = VSPK.NUNSGateway(data=nsg_data)
         metro_org.create_child(nsg_dev)
@@ -360,6 +398,22 @@ def create_iso_file(module, metro_org, nsg_temp):
     subprocess.call("gzip -f -d %s/user_image.iso.gz" % nsgv_path, shell=True)
 
 
+def get_uplinks(module):
+    port_params = module.params['zfb_ports']
+    network_port = port_params['network_port']
+
+    if 'vlans' not in network_port:
+        return []
+
+    uplinks = [int(x['vlan_value']) for x in network_port['vlans'] if x['uplink']]
+    vlan0_uplink = next((x for x in uplinks if x == 0), None)
+    if vlan0_uplink is not None:
+        # Don't create uplinks on other vlans if we need one on vlan 0
+        uplinks = [0]
+
+    return uplinks
+
+
 def main():
     arg_spec = dict(
         nsgv_path=dict(
@@ -372,7 +426,7 @@ def main():
             required=False,
             type='str'),
         vsd_license_file=dict(
-            required=True,
+            required=False,
             type='str'),
         vsd_auth=dict(
             required=True,
@@ -409,12 +463,12 @@ def main():
 
     # Get VSD license
     vsd_license = ""
-    try:
-        with open(vsd_license_file, 'r') as lf:
-            vsd_license = lf.read()
-    except Exception as e:
-        module.fail_json(msg="ERROR: Failure reading file: %s" % e)
-        return
+    if vsd_license_file != '':
+        try:
+            with open(vsd_license_file, 'r') as lf:
+                vsd_license = lf.read()
+        except Exception as e:
+            module.fail_json(msg="ERROR: Failure reading file: %s" % e)
 
     # Create a session as csp user
     try:
@@ -430,19 +484,21 @@ def main():
     nsg_already_configured = False
 
     # Create nsg templates and iso file
-    if (not is_license_already_installed(csproot, vsd_license)):
-        install_license(csproot, vsd_license)
+    if vsd_license_file != '':
+        if (not is_license_already_installed(csproot, vsd_license)):
+            install_license(csproot, vsd_license)
 
     if has_nsg_configuration(module, csproot):
         nsg_already_configured = True
 
     create_proxy_user(module, session)
 
+    uplinks = get_uplinks(module)
+
     nsg_infra = create_nsg_infra_profile(module, csproot)
     nsg_temp = create_nsg_gateway_template(module, csproot, nsg_infra)
-    vsc_infra = create_vsc_infra_profile(module, csproot)
-    create_nsgv_ports(module, nsg_temp, vsc_infra)
-    metro_org = create_nsg_device(module, csproot, nsg_temp)
+    create_nsgv_ports(module, nsg_temp, csproot, uplinks)
+    metro_org = create_nsg_device(module, csproot, nsg_temp, uplinks)
 
     if ("skip_iso_create" not in module.params or
             module.params["skip_iso_create"] is not True):

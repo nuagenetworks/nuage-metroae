@@ -1,0 +1,162 @@
+- block: 
+
+  - name: Create and transfer certs
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    when: not skip_vsd_installed_check
+    vars:
+      certificate_password: "{{ nuh_default_password }}"
+      certificate_username: "{{ inventory_hostname }}"
+      commonName: "{{ inventory_hostname }}"
+      certificate_type: server
+      scp_user: "root"
+      scp_location: /opt/proxy/data/certs
+      additional_parameters:  -d {{ inventory_hostname }}
+
+  - name: Create and transfer certs for "nuh-pre" user
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    when: not skip_vsd_installed_check
+    vars:
+      certificate_password: "{{ nuh_default_password }}"
+      certificate_username: "{{ inventory_hostname }}-pre"
+      commonName: "{{ inventory_hostname }}-pre"
+      certificate_type: server
+      scp_user: "root"
+      scp_location: /opt/proxy/data/certs
+      additional_parameters:  "-d {{ inventory_hostname }}-pre"
+
+  - name: Create and transfer certs for "nuh-post" user
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    when: not skip_vsd_installed_check
+    vars:
+      certificate_password: "{{ nuh_default_password }}"
+      certificate_username: "{{ inventory_hostname }}-post"
+      commonName: "{{ inventory_hostname }}-post"
+      certificate_type: server
+      scp_user: "root"
+      scp_location: /opt/proxy/data/certs
+      additional_parameters:  "-d {{ inventory_hostname }}-post"
+
+  - block:
+
+    - name: Get current VSD API version
+      include_role:
+        name: common
+        tasks_from: get-current-vsd-api-version
+
+    - name: Format VSPK auth for VSPK module
+      set_fact:
+        vspk_auth:
+          api_username: "{{ vsd_auth.username }}"
+          api_password: "{{ vsd_auth.password }}"
+          api_enterprise: "{{ vsd_auth.enterprise }}"
+          api_url: "{{ vsd_auth.api_url }}"
+          api_version: "{{ current_api_version }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
+    - name: Check if the user already exists (ignoring errors)
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: User
+        command: find
+        properties:
+          userName: "{{ item }}"
+      ignore_errors: yes
+      register: nuage_check_user
+      with_items:
+        - "{{ inventory_hostname }}"
+        - "{{ inventory_hostname }}-pre"
+        - "{{ inventory_hostname }}-post"
+
+  - block:
+
+    - name: Get CSP Enterprise ID
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: Enterprise
+        command: get_csp_enterprise
+      register: nuage_csp_enterprise
+
+    - name: Create NUH users
+      delegate_to: localhost
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: User
+        parent_id: "{{ nuage_csp_enterprise.id }}"
+        parent_type: Enterprise
+        state: present
+        match_filter: "userName == '{{ item }}'"
+        properties:
+          email: "example@example.com"
+          first_name: "Sample"
+          last_name: "User"
+          password: "sample-password"
+          user_name: "{{ item }}"
+      register: nuh_certs_users
+      with_items:
+        - "{{ inventory_hostname }}"
+        - "{{ inventory_hostname }}-pre"
+        - "{{ inventory_hostname }}-post"
+
+    - name: Save user ids
+      set_fact:
+        nuh_user: "{{ nuh_certs_users.results[0].id }}"
+        nuh_pre_user: "{{ nuh_certs_users.results[1].id }}"
+        nuh_post_user: "{{ nuh_certs_users.results[2].id }}"
+
+    - name: Get Root Group
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: Group
+        parent_id: "{{ nuage_csp_enterprise.id }}"
+        parent_type: Enterprise
+        command: find
+        properties:
+          name: "Root Group"
+      register: nuh_root_group
+
+    - name: Get BootstrapCA Group
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: Group
+        parent_id: "{{ nuage_csp_enterprise.id }}"
+        parent_type: Enterprise
+        command: find
+        properties:
+          name: "BootstrapCA Group"
+      register: nuh_bootstrap_group  
+
+    - name: Get VSPCA Group
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: Group
+        parent_id: "{{ nuage_csp_enterprise.id }}"
+        parent_type: Enterprise
+        command: find
+        properties:
+          name: "VSPCA Group"
+      register: nuh_vspca_group
+
+    - name: Add NUH users in appropriate group
+      delegate_to: localhost
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: User
+        id: "{{ item.user }}"
+        parent_id: "{{ item.group }}"
+        parent_type: Group
+        state: present
+      with_items:
+        - { user: "{{ nuh_user }}", group: "{{ nuh_root_group.id }}" }
+        - { user: "{{ nuh_pre_user }}", group: "{{ nuh_bootstrap_group.id }}" }
+        - { user: "{{ nuh_post_user }}", group: "{{ nuh_vspca_group.id }}" }
+
+    when: nuage_check_user is failed
+
+  delegate_to: localhost
+  remote_user: "{{ nuh_default_username }}"

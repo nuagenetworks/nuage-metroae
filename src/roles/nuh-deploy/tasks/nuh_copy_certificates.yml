@@ -1,0 +1,105 @@
+- block:
+
+  - name: Get vsd node(s) information
+    import_role:
+      name: common
+      tasks_from: vsd-node-info.yml
+    vars:
+      vsd_hostname: "{{ vsd_fqdn }}"
+
+
+  - block:
+
+    - name: Create and transfer certs
+      include_role:
+        name: common
+        tasks_from: vsd-generate-transfer-certificates
+      vars:
+        certificate_password: "{{ nuh_default_password }}"
+        certificate_username: "proxy"
+        commonName: "proxy"
+        certificate_type: server
+        scp_user: "root"
+        scp_location: /opt/proxy/data/certs
+        additional_parameters:  -d {{ item.external_fqdn }}
+      with_items:
+        - "{{ external_interfaces }}"
+      when: 
+        - not skip_vsd_installed_check
+
+    - block:
+      - name: Get all registered users on VSD
+        command: /opt/ejabberd/bin/ejabberdctl registered_users {{ vsd_fqdn }}
+        run_once: true
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+        register: notification_app_check
+      
+      - name: Create notification application user on vsd
+        command: /opt/ejabberd/bin/ejabberdctl register {{ notification_app1.username }} {{ vsd_fqdn }} {{ notification_app1.password }}
+        run_once: true
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+        when: 
+          - notification_app1 is defined
+          - notification_app1.username not in notification_app_check.stdout
+
+      - name: Create notification application user on vsd
+        command: /opt/ejabberd/bin/ejabberdctl register {{ notification_app2.username }} {{ vsd_fqdn }} {{ notification_app2.password }}
+        run_once: true
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+        when: 
+          - notification_app2 is defined
+          - notification_app2.username not in notification_app_check.stdout
+
+      delegate_to: "{{ vsd_hostname_list[0] }}"
+      remote_user: "{{ custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ custom_password | default(vsd_default_password) }}"
+
+    - name: Copy the network config for NUH internal and external networks
+      template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
+    - name: Check if NUH Version is 20.X
+      shell: "rpm -qa | grep 'nuage-proxy-utils-20'"
+      ignore_errors: true
+      register: nuhv20
+
+    - name: Update haproxy Service
+      lineinfile:
+        path: /opt/proxy/bin/ansible/roles/common/handlers/main.yml
+        regex: "shell: systemctl reload-or-restart haproxy"
+        line: "  shell: systemctl restart haproxy"
+      when: nuhv20.rc == 0
+
+    - block:
+
+      - name: Run the network config script on NUH
+        command: ansible-playbook configure.yml
+        args:
+          chdir: /opt/proxy/bin/ansible
+        register: script_output
+        retries: 2
+        until: script_output.rc == 0
+
+      - name: Reset haproxy Service
+        lineinfile:
+          path: /opt/proxy/bin/ansible/roles/common/handlers/main.yml
+          regex: "shell: systemctl restart haproxy"
+          line: "  shell: systemctl reload-or-restart haproxy"
+        when: nuhv20.rc == 0
+
+      - name: Check if the eth1 is configured on Internal interface
+        shell: set -o pipefail && ip netns exec Internal ip addr list | grep eth1
+
+      - name: Check if the eth2/eth3 is configured on External interfaces
+        shell: set -o pipefail && ip netns exec {{ item.name }} ip addr list | grep {{ item.dev }}
+        with_items: "{{ external_interfaces }}"
+        when: external_interfaces is defined and external_interfaces | length > 0
+
+      when:
+        - internal_ip is defined
+
+    when: inventory_hostname == groups['nuh_first_node'][0] 
+
+  remote_user: "{{ nuh_default_username }}"

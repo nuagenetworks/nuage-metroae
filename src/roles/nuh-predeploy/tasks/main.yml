@@ -1,9 +1,39 @@
 - include_role:
     name: check-skip-target-server
   vars:
-    - target_server_list: ["kvm"]
+    - target_server_list: ["kvm", "vcenter", "openstack"]
+
+- include_role:
+    name: skip-actions
+  vars:
+    - action: nuh_predeploy
 
 - include_role:
     name: check-node-reachability
 
+- name: Get NUH proxy directory stat
+  stat:
+    path: /opt/proxy
+  remote_user: "{{ nuh_default_username }}"
+  register: nuh_dir
+  when: node_reachable
+
+- name: Set fact for VSD present
+  set_fact:
+    node_present: "{{ nuh_dir is defined and
+                      nuh_dir.stat is defined and
+                      nuh_dir.stat.isdir is defined and
+                      nuh_dir.stat.isdir }}"
+
 - import_tasks: kvm.yml
+  when: target_server_type is match("kvm")
+
+- import_tasks: vcenter.yml
+  when: target_server_type is match("vcenter")
+
+- import_tasks: openstack.yml
+  when: target_server_type is match("openstack")
+  tags:
+    - nuh
+    - openstack
+    - nuh-predeploy

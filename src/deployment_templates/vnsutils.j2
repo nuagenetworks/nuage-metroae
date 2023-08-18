@@ -49,12 +49,12 @@
 
     # < Target Server Type >
     # Type of hypervisor environment into which the instance will be created. Use 'none' when skipping predeploy.
-    # (kvm, vcenter, aws, nuagex, openstack, none) 
+    # (kvm, vcenter, aws, openstack, none) 
     #
     target_server_type: "{{ item.target_server_type }}"
 
     # < Target Server IP or FQDN >
-    # Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server
+    # Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server. When target_server_type is set to openstack, this property is unused and should be set to 0.0.0.0
     #
     target_server: "{{ item.target_server }}"
 
@@ -205,6 +205,18 @@
     vcenter_vmfolder: "{{ item.vcenter_vmfolder }}"
     {%- else %}
     # vcenter_vmfolder: (global vCenter VM folder)
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter Hosts and Clusters Folder >
+    # Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+    #
+    {%- if item.vcenter_host_clusters_folder is defined %}
+    vcenter_host_clusters_folder: "{{ item.vcenter_host_clusters_folder }}"
+    {%- else %}
+    # vcenter_host_clusters_folder: ""
     {%- endif %}
 
     ########################

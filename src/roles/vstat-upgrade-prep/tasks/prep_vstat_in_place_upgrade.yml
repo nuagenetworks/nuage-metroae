@@ -1,4 +1,10 @@
-- block:
+- name: Set variable for upgrade versions
+  set_fact:
+    upgrade_60_2010:
+      "{{ upgrade_from_version|upper|replace('R','') is search('6.0.') and upgrade_to_version|upper|replace('R','') is search('20.10.') }}"
+
+- name: Save version for certain upgrades
+  block:
 
   - name: Get elasticsearch version
     command: "curl localhost:9200"      # noqa 303
@@ -20,6 +26,7 @@
   become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+  when: not upgrade_60_2010
 
 - name: Get vsd node(s) information
   import_role:
@@ -34,6 +41,7 @@
     name: common
     tasks_from: disable-stats-on-vsd.yml
   with_items: "{{ vsd_hostname_list }}"
+  when: not skip_disable_stats_collection | default(false)
   loop_control:
     loop_var: vsd
 
@@ -49,7 +57,7 @@
     register: ssh_key
 
   delegate_to: "{{ vsd_hostname_list[0] }}"
-  remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
   become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"

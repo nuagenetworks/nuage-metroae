@@ -22,8 +22,8 @@
       tasks_from: vsd-generate-transfer-certificates
     vars:
       certificate_password: "{{ webfilter_default_password }}"
-      certificate_username: "webfilter"
-      commonName: "webfilter"
+      certificate_username: "{{ cert_name }}"
+      commonName: "{{ cert_name }}"
       certificate_type: server
       file_type: jks
       additional_parameters: "-p {{ webfilter_default_password }} -d {{ inventory_hostname }}"
@@ -34,7 +34,7 @@
 
     - name: Get the webfilter jks from the VSD
       fetch:
-        src: "/opt/vsd/ejbca/p12/webfilter.jks"
+        src: "/opt/vsd/ejbca/p12/{{cert_name}}.jks"
         dest: "/tmp/webfilter/"
         flat: yes
 
@@ -56,14 +56,21 @@
       path: /tmp/webfilter
       state: absent
 
-  - name: "Ensure application properties contains webfilter"
+  - name: "Adding the {{ cert_name }} jks to application.properties"
     lineinfile:
       name: /opt/vsd/webfilter/conf/application.properties
-      line: "server.ssl.key-store=/opt/vsd/webfilter/conf/webfilter.jks"
+      regexp: "server.ssl.key-store=/opt/vsd/webfilter/conf/webfilter.jks"
+      line: "server.ssl.key-store=/opt/vsd/webfilter/conf/{{ cert_name }}.jks"
       state: present
-    check_mode: yes
     register: app_properties
-    failed_when: (app_properties is changed) or (app_properties is failed)
+
+  - name: "Changing {{ cert_name }} as server.ssl.key-alias"
+    lineinfile:
+      name: /opt/vsd/webfilter/conf/application.properties
+      regexp: "server.ssl.key-alias=webfilter"
+      line: "server.ssl.key-alias={{ cert_name }}"
+      state: present
+    register: app_properties
 
   - name: "Ensure application properties contains truststore"
     lineinfile:
@@ -98,7 +105,7 @@
 
   - name: Wait for webfilter processes to become running
     monit_waitfor_service:
-      name: "{{ webfilter_proc['state'].keys() }}"
+      name: "{{ webfilter_proc['state'].keys() | list }}"
       timeout_seconds: 600
       test_interval_seconds: 10
 
@@ -107,20 +114,58 @@
 
   - name: Wait for webfilter processes to become running
     monit_waitfor_service:
-      name: "{{ webfilter_proc['state'].keys() }}"
+      name: "{{ webfilter_proc['state'].keys() | list }}"
       timeout_seconds: 600
       test_interval_seconds: 10
 
-  - name: Run incompass operation command for seed
-    shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all -p /opt/vsd/webfilter/seed_34
+  - block:
 
-  - name: Run incompass operation command
-    shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all
+    - name: Enable Proxy Settings in "/usr/local/gcf1/etc/gcf1.conf"
+      command: "sed -i 's/^# Proxy Settings.*/Proxy Settings/' /usr/local/gcf1/etc/gcf1.conf"
 
-  - name: Wait for webfilter processes to become running
-    monit_waitfor_service:
-      name: "{{ webfilter_proc['state'].keys() }}"
-      timeout_seconds: 600
-      test_interval_seconds: 10
+    - name: Add PROXY_HOST in "/usr/local/gcf1/etc/gcf1.conf"
+      command: "sed -i 's/^PROXY_HOST=.*/PROXY_HOST={{ web_proxy_host }}/' /usr/local/gcf1/etc/gcf1.conf"
+
+    - name: Add PROXY_PORT in "/usr/local/gcf1/etc/gcf1.conf"
+      command: "sed -i 's/^PROXY_PORT=.*/PROXY_PORT={{ web_proxy_port }}/' /usr/local/gcf1/etc/gcf1.conf"
+
+    - name: Enable Proxy Settings in "/opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
+      command: "sed -i 's/^# Proxy Settings.*/Proxy Settings/' /opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
+
+    - name: Add PROXY_HOST in "/opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
+      command: "sed -i 's/^PROXY_HOST=.*/PROXY_HOST={{ web_proxy_host }}/' /opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
+
+    - name: Add PROXY_PORT in "/opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
+      command: "sed -i 's/^PROXY_PORT=.*/PROXY_PORT={{ web_proxy_port }}/' /opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
+
+    - name: Restart the incompass monits to set the new proxy
+      command: monit restart incompass
+
+    - name: Restart the incompass monits to set the new proxy for seed
+      command: monit restart incompass-34-seed
+
+    - name: Wait for webfilter processes to become running
+      monit_waitfor_service:
+        name: "{{ webfilter_proc['state'].keys() }}"
+        timeout_seconds: 600
+        test_interval_seconds: 10
+
+    when: web_http_proxy is defined and web_http_proxy
+
+  - block:
+
+    - name: Run incompass operation command for seed
+      shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all -p /opt/vsd/webfilter/seed_34
+
+    - name: Run incompass operation command
+      shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all
+  
+    - name: Wait for webfilter processes to become running
+      monit_waitfor_service:
+        name: "{{ webfilter_proc['state'].keys() | list }}"
+        timeout_seconds: 600
+        test_interval_seconds: 10
+
+    when: run_incompass_operation is defined and run_incompass_operation
 
   remote_user: "{{ webfilter_default_username }}"

@@ -21,9 +21,9 @@ You have the option of removing the entire deployment or only specified individu
 
 Remove the entire existing deployment with one command as follows:
 ```
-metroae destroy everything
+metroae-container destroy everything
 ```
-Note: you may alternate between `metroae install everything` and `metroae destroy everything` as needed.
+Note: you may alternate between `metroae-container install everything` and `metroae-container destroy everything` as needed.
 
 ### Remove Individual Components
 
@@ -32,11 +32,11 @@ Alternatively, you can remove individual components (VSD, VSC, VRS, etc) as need
 #### Example Sequence for VSC:
   
   Configure components under your deployment  
-  Run `metroae install everything` to deploy VSD, VSC, VRS, etc.  
+  Run `metroae-container install everything` to deploy VSD, VSC, VRS, etc.  
   Discover that something needs to be changed in the VSCs  
-  Run **`metroae destroy vscs`** to tear down just the VSCs  
+  Run **`metroae-container destroy vscs`** to tear down just the VSCs  
   Edit `vscs.yml` in your deployment to fix the problem  
-  Run `metroae install vsc predeploy`, `metroae install vscs deploy`, and `metroae install vscs postdeploy` to get the VSCs up and running again.
+  Run `metroae-container install vsc predeploy`, `metroae-container install vscs deploy`, and `metroae-container install vscs postdeploy` to get the VSCs up and running again.
 
 ## Questions, Feedback, and Contributing
 

@@ -54,26 +54,17 @@
     set_fact:
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
 
-  - name: Get list of partitions
-    shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
-    register: partitions_list
+  - name: Get guestfish mount for qcow2
+    include_role:
+      name: common
+      tasks_from: get-guestfish-mount
+    vars:
+      guestfish_qcow2_path: "{{ guestfish_dest }}"
 
-  - name: Check partition content
-    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"         # noqa 305
-    register: partitions
-    with_items: "{{ partitions_list.stdout_lines }}"
-
-  - name: Find root partition
-    set_fact:
-      guestfish_mount: "{{ item.item.split(':')[0] }}"
-    with_items: "{{ partitions.results }}"
-    when: '"proc" in item.stdout'
-
-  - name: Create cloud-init disable file
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} touch /etc/cloud/cloud-init.disabled
-
-  - name: Set the owner and group on the cloud-init disable file
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/cloud/cloud-init.disabled
+  - name: Verify that mount was found
+    assert:
+      that: "guestfish_mount is defined"
+      msg: "guestfish mount point was not found. Are you using the correct qcow2 file?"
 
   - name: Create a temporary copy of the network script for eth0
     template:
@@ -132,7 +123,18 @@
     shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config  # noqa 305
 
   - name: Disable SELinux
-    shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"  # noqa 305
+    shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} \
+           sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"  # noqa 305
+
+  - block:
+
+    - name: Preallocate most of Portal disk space to avoid pausing the VM, this also checks disk space
+      shell: "fallocate -x -l {{ portal_allocate_size_gb }}G {{ guestfish_dest }}"  # noqa 305
+
+    - name: Increase the virtual vm size
+      shell: "qemu-img resize {{ guestfish_dest }} +{{ portal_allocate_size_gb | int - 8 }}G"
+
+    when: portal_allocate_size_gb | int > 0
 
   - name: Define and start Portal VM
     include_role:
@@ -141,6 +143,27 @@
     vars:
       vm_xml: "{{ lookup('template', 'portal.xml.j2') }}"
       autostart_enabled: true
+
+  - block:
+    - name: Wait for PORTAL VM ssh to be ready
+      include_role:
+        name: common
+        tasks_from: wait-for-ssh
+      vars:
+        ssh_host: "{{ mgmt_ip }}"
+        host_username: "{{ portal_default_username }}"
+
+    - name: Grow partition on the vm
+      shell: "growpart /dev/vda 1"
+      delegate_to: "{{ inventory_hostname }}"
+      remote_user: "{{ portal_default_username }}"
+
+    - name: Grow root fs
+      shell: "xfs_growfs /"
+      delegate_to: "{{ inventory_hostname }}"
+      remote_user: "{{ portal_default_username }}"
+
+    when: portal_allocate_size_gb | int > 0
 
   when: not node_running
   delegate_to: "{{ target_server }}"

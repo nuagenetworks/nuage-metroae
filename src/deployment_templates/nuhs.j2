@@ -30,6 +30,15 @@
 
     ######################
 
+    # < Upgrade VM Name >
+    # Virtual Machine name of the new NUH. Used during Upgrade only
+    #
+    {%- if item.upgrade_vmname is defined %}
+    upgrade_vmname: "{{ item.upgrade_vmname }}"
+    {%- else %}
+    # upgrade_vmname: ""
+    {%- endif %}
+
     ##### Management Interface
 
     # < Management IP address >
@@ -92,9 +101,19 @@
     ##### Other parameters
 
     # < Target Server IP or FQDN >
-    # Hostname or IP address of the KVM hypervisor where the DNS VM will be instantiated
+    # Hostname or IP address of the KVM hypervisor where the NUH VM will be instantiated
     #
     target_server: "{{ item.target_server }}"
+
+    # < Target Server Type >
+    # Type of hypervisor environment where VMs will be instantiated. Use 'none' when skipping predeploy.
+    # (kvm, vcenter, openstack, none) 
+    #
+    {%- if item.target_server_type is defined %}
+    target_server_type: "{{ item.target_server_type }}"
+    {%- else %}
+    # target_server_type: kvm
+    {%- endif %}
 
     # < Timezone >
     # Timezone of the NUH
@@ -165,6 +184,200 @@
     {%- endif %}
 
     ####################
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    ##### vCenter Parameters
+
+    # < vCenter Datacenter Name >
+    # Name of the vCenter Datacenter on which the VSD VM will be deployed. Defaults to the common vCenter Datacenter Name if not defined here.
+    #
+    {%- if item.vcenter_datacenter is defined %}
+    vcenter_datacenter: "{{ item.vcenter_datacenter }}"
+    {%- else %}
+    # vcenter_datacenter: (global vCenter Datacenter Name)
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter Cluster Name >
+    # Name of the vCenter Cluster on which the VSD VM will be deployed. Defaults to the common vCenter Cluster Name if not defined here.
+    #
+    {%- if item.vcenter_cluster is defined %}
+    vcenter_cluster: "{{ item.vcenter_cluster }}"
+    {%- else %}
+    # vcenter_cluster: (global vCenter Cluster Name)
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter Datastore Name >
+    # Name of the vCenter Datastore on which the VSD VM will be deployed. Defaults to the common vCenter Datastore Name if not defined here.
+    #
+    {%- if item.vcenter_datastore is defined %}
+    vcenter_datastore: "{{ item.vcenter_datastore }}"
+    {%- else %}
+    # vcenter_datastore: (global vCenter Datastore Name)
+    {%- endif %}
+
+    ########################
+    {%- endif %}
+
+    # < Preserve NUH VM >
+    # Shuts down the vm during destroy process, instead of actually deleting them.
+    #
+    {%- if item.preserve_vm is defined %}
+    preserve_vm: {{ item.preserve_vm | lower }}
+    {%- else %}
+    # preserve_vm: true/false
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    ##### OpenStack Parameters
+
+    # < OpenStack Image >
+    # Name of image installed on OpenStack for NUH
+    #
+    {%- if item.openstack_image is defined %}
+    openstack_image: "{{ item.openstack_image }}"
+    {%- else %}
+    # openstack_image: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Flavor >
+    # Name of instance flavor installed on OpenStack for NUH
+    #
+    {%- if item.openstack_flavor is defined %}
+    openstack_flavor: "{{ item.openstack_flavor }}"
+    {%- else %}
+    # openstack_flavor: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Availability Zone >
+    # Name of availability zone on OpenStack for NUH
+    #
+    {%- if item.openstack_availability_zone is defined %}
+    openstack_availability_zone: "{{ item.openstack_availability_zone }}"
+    {%- else %}
+    # openstack_availability_zone: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Network >
+    # Name of network on OpenStack for NUH
+    #
+    {%- if item.openstack_network is defined %}
+    openstack_network: "{{ item.openstack_network }}"
+    {%- else %}
+    # openstack_network: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Subnet >
+    # Name of subnet on OpenStack for NUH
+    #
+    {%- if item.openstack_subnet is defined %}
+    openstack_subnet: "{{ item.openstack_subnet }}"
+    {%- else %}
+    # openstack_subnet: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Port Name >
+    # Name for Mgmt interface
+    #
+    {%- if item.openstack_mgmt_port_name is defined %}
+    openstack_mgmt_port_name: "{{ item.openstack_mgmt_port_name }}"
+    {%- else %}
+    # openstack_mgmt_port_name: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Port Security Groups >
+    # Set of security groups to associate with Mgmt interface
+    #
+    {%- if item.openstack_mgmt_port_security_groups is defined %}
+    openstack_mgmt_port_security_groups: [ {% for i in item.openstack_mgmt_port_security_groups | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # openstack_mgmt_port_security_groups: []
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Internal Network >
+    # Name of Internal network on OpenStack for NUH
+    #
+    {%- if item.openstack_internal_network is defined %}
+    openstack_internal_network: "{{ item.openstack_internal_network }}"
+    {%- else %}
+    # openstack_internal_network: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Internal Subnet >
+    # Name of Internal subnet on OpenStack for NUH
+    #
+    {%- if item.openstack_internal_subnet is defined %}
+    openstack_internal_subnet: "{{ item.openstack_internal_subnet }}"
+    {%- else %}
+    # openstack_internal_subnet: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Internal Port Name >
+    # Name for Internal interface
+    #
+    {%- if item.openstack_internal_port_name is defined %}
+    openstack_internal_port_name: "{{ item.openstack_internal_port_name }}"
+    {%- else %}
+    # openstack_internal_port_name: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Internal Port Security Groups >
+    # Set of security groups to associate with Internal interface
+    #
+    {%- if item.openstack_internal_port_security_groups is defined %}
+    openstack_internal_port_security_groups: [ {% for i in item.openstack_internal_port_security_groups | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # openstack_internal_port_security_groups: []
+    {%- endif %}
+
+    ##########################
+    {%- endif %}
+
+    # < VSD FQDN >
+    # FQDN of the VSD or VSD cluster
+    #
+    {%- if item.vsd_fqdn is defined %}
+    vsd_fqdn: "{{ item.vsd_fqdn }}"
+    {%- else %}
+    # vsd_fqdn: ""
+    {%- endif %}
 
 {% endfor %}
 {% else %}

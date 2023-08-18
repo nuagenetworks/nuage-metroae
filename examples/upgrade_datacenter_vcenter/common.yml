@@ -11,7 +11,7 @@
 # < Nuage Unzip Files Directory >
 # Full path to the directory where the Nuage unzipped files for this deployment can be found  E.g. qcow2 files. When using docker container the path needs to be a relative path from the images path specified during setup.
 #
-nuage_unzipped_files_dir: "/my/unzipped/filedir"
+nuage_unzipped_files_dir: "./unzipped/filedir"
 
 # < Nuage Software Version >
 # Nuage software version being installed. Optional for version comparison to skip deployment of some components that have already been installed.
@@ -92,6 +92,20 @@ dns_server_list: [ "10.1.0.2", ]
 
 ######################
 
+##### Stats Out
+
+# < Statistics Out Deployment >
+# Set the deployment for stats-out.  At this time, only exactly 3 clustered VSDs and exactly 3 stats VSDs are supported.  The first 3 VSDs specified are clustered and the remaining are marked statistics only
+#
+# stats_out: False
+
+# < Statistics Out Proxy Address >
+# Set the proxy address for a stats-out deployment.  If unspecified the first NUH to be deployed will be used as the proxy.  If there are no NUHs being deployed, an alternative proxy address must be specified.
+#
+# stats_out_proxy: (first NUH hostname)
+
+###############
+
 ##### Options
 
 # < Timezone >
@@ -110,7 +124,7 @@ dns_server_list: [ "10.1.0.2", ]
 # vsd_run_cluster_rtt_test: False
 
 # < Ignore RTT Test Errors >
-# When true, do not validate the RTT between VSDs in a cluster is less than max RTT
+# When true, continue MetroAE execution upon error and do not validate the RTT between VSDs in a cluster is less than max RTT, else stop MetroAE execution upon error
 #
 # vsd_ignore_errors_rtt_test: False
 
@@ -145,7 +159,7 @@ dns_server_list: [ "10.1.0.2", ]
 # vsd_disk_performance_test_max_time: 300
 
 # < Ignore Disk Performance Test Errors >
-# When true, ignore the results of the VSD disk performance test
+# When true, continue MetroAE execution upon error and ignore the results of the VSD disk performance test, else stop MetroAE execution upon error
 #
 # vsd_ignore_disk_performance_test_errors: False
 
@@ -202,6 +216,11 @@ vcenter_datastore: "datastoreA"
 #
 # vcenter_vmfolder: ""
 
+# < vCenter Hosts and Clusters Folder >
+# Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+#
+# vcenter_host_clusters_folder: ""
+
 ############################
 
 ##### vCenter common
@@ -228,6 +247,12 @@ vcenter_ovftool: "/usr/bin/ovftool"
 #
 # xmpp_tls: True
 
+# < Set XMPP TLS mode require or allow >
+# Set XMPP TLS mode require or allow
+# (allow, require) 
+#
+# xmpp_tls_mode: ""
+
 # < OpenFlow TLS >
 # Flag to indicate when secure communications via TLS will be used between VSCs and data plane components, e.g. VRS or NSGv; If VRS is defined, target_server_password must be defined in credentials.yml
 #
@@ -238,12 +263,12 @@ vcenter_ovftool: "/usr/bin/ovftool"
 ##### Licenses
 
 # < VSD Standard License File >
-# Path to the standard license file for the VSD
+# Path to the standard license file for the VSD including the file name
 #
 # vsd_license_file: ""
 
 # < VSD Cluster License File >
-# Path to the cluster license file for the VSD
+# Path to the cluster license file for the VSD including the file name
 #
 # vsd_cluster_license_file: ""
 
@@ -252,18 +277,28 @@ vcenter_ovftool: "/usr/bin/ovftool"
 #
 # vsd_license_required_days_left: -1
 
+# < Continue Metroae execution on VSD license failure >
+# Continue Metroae execution even after license failure if this is set to true
+#
+# vsd_continue_on_license_failure: False
+
 # < VSD Ejabberd License File >
-# Path to the Ejabberd license file for the VSD
+# Path to the Ejabberd license file for the VSD including the file name
 #
 # vsd_ejabberd_license_file: ""
 
-# < SD-WAN Portal License Filename >
-# Path to the license file for the SD-WAN Portal
+# < VSTAT License File >
+# Optional License File for Elasticsearch
+#
+# vstat_license_file: ""
+
+# < SD-WAN Portal License File >
+# Path to the license file for the SD-WAN Portal including the file name
 #
 # portal_license_file: ""
 
 # < NUH License File >
-# Path to the license file for the NUH
+# Path to the license file for the NUH including the file name
 #
 # nuh_license_file: ""
 
@@ -315,6 +350,11 @@ vcenter_ovftool: "/usr/bin/ovftool"
 #
 # vstat_allocate_size_gb: 100
 
+# < Portal Disk Size >
+# Amount of Portal disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+#
+# portal_allocate_size_gb: 16
+
 # < VCIN Disk Size >
 # Amount of VCIN disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
 #
@@ -326,6 +366,49 @@ vcenter_ovftool: "/usr/bin/ovftool"
 # nsgv_allocate_size_gb: 4
 
 ################
+
+##### KVM and VCenter RAM
+
+# < KVM VSD RAM >
+# Valid for only KVM and VCenter deployments. Amount of VSD RAM to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+#
+# vsd_ram: 24
+
+# < KVM VSC RAM >
+# Valid for only KVM and VCenter deployments. Amount of VSC RAM to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+#
+# vsc_ram: 4
+
+# < KVM VSTAT RAM >
+# Valid for only KVM and VCenter deployments. Amount of VSTAT RAM to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+#
+# vstat_ram: 16
+
+#########################
+
+##### KVM and VCenter CPU
+
+# < KVM VSD CPU cores >
+# Valid for only KVM and VCenter deployments. Number of CPU's for VSD.
+#
+# vsd_cpu_cores: 6
+
+# < KVM VSC CPU cores >
+# Valid for only KVM and VCenter deployments. Number of CPU's for VSC.
+#
+# vsc_cpu_cores: 6
+
+# < KVM VSTAT CPU cores >
+# Valid for only KVM and VCenter deployments. Number of CPU's for VSTAT.
+#
+# vstat_cpu_cores: 6
+
+# < KVM VNSUTIL CPU cores >
+# Valid for only KVM and VCenter deployments. Number of CPU's for VNSUTIL.
+#
+# vnsutil_cpu_cores: 2
+
+#########################
 
 ##### Authentication
 
@@ -447,3 +530,13 @@ vcenter_ovftool: "/usr/bin/ovftool"
 # vsd_monit_alert_not_on: ""
 
 ##########################################
+
+# < VSD In-place upgrade during Install  >
+# Allowing VSD in-place upgrade during Installation
+#
+# vsd_install_inplace_upgrade: False
+
+# < Keep root access >
+# Create custom username and password without hardening
+#
+# keep_root_access: False

@@ -10,8 +10,13 @@
       zfb_nsg: "{{ zfb_nsg }}"
       zfb_ports: "{{ zfb_ports }}"
       zfb_nsg_infra: "{{ zfb_nsg_infra }}"
-      zfb_vsc_infra: "{{ zfb_vsc_infra }}"
+      zfb_vsc_infra: "{{ zfb_vsc_infra | default({}) }}"
     delegate_to: localhost
+
+  - name: Get current VSD API version
+    include_role:
+      name: common
+      tasks_from: get-current-vsd-api-version
 
   - name: Format VSD auth for VSPK module
     set_fact:
@@ -20,10 +25,11 @@
         api_password: "{{ vsd_auth.password }}"
         api_enterprise: "{{ vsd_auth.enterprise }}"
         api_url: "{{ vsd_auth.api_url }}"
+        api_version: "{{ current_api_version }}"
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: Get Enterprise from VSD
-    connection: local
+    delegate_to: localhost
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: Enterprise
@@ -33,7 +39,7 @@
     register: nuage_enterprise
 
   - name: Get NSG Gateway from VSD
-    connection: local
+    delegate_to: localhost
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: NSGateway
@@ -45,7 +51,7 @@
     register: nuage_nsg
 
   - name: Find port1 of the NSG-AMI
-    connection: local
+    delegate_to: localhost
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: NSPort
@@ -57,7 +63,7 @@
     register: nuage_nsg_port1
 
   - name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
-    connection: local
+    delegate_to: localhost
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: NSPort
@@ -67,7 +73,7 @@
         nat_traversal: "ONE_TO_ONE_NAT"
 
   - name: Create Job to download auto-bootstrap info
-    connection: local
+    delegate_to: localhost
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: Job
@@ -107,7 +113,7 @@
      - { key: "NSGLANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIId }}" }
      - { key: "NSGWANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGWANENIId }}" }
      - { key: "NSGLANENIIP", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIIP }}" }
-    when: (rc_aws_cfn_nuagevpc.failed is not defined)
+    when: "'Stack CREATE complete' in rc_aws_cfn_nuagevpc.output"
 
   when: provision_vpc is defined
 
@@ -132,6 +138,17 @@
     when: (rc_aws_nsg_lan_eni_facts.network_interfaces|length > 0 )
 
   when: provision_vpc is not defined
+
+- name: Create user data for bootstrap
+  command: cat "{{ iso_path }}/{{ iso_file }}"
+  delegate_to: localhost
+  register: bootstrap_user_data
+
+- name: Set NSGv User Data
+  set_fact:
+    nsg_ami_user_data: "{{ bootstrap_user_data.stdout }}"
+
+- debug: var=nsg_ami_user_data
 
 - name: Generate CloudFormation Template
   delegate_to: localhost

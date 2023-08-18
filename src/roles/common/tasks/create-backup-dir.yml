@@ -1,22 +1,27 @@
 - name: Pull facts of localhost
-  connection: local
+  delegate_to: localhost
   action: setup
 
 - name: get the username running the deploy
-  local_action: command whoami
+  command: whoami
+  changed_when: false
+  delegate_to: localhost
   register: username_on_the_host
 
 - debug: var=username_on_the_host verbosity=1
 
 - name: get the primary group for the username
-  local_action: command id -gn "{{ username_on_the_host.stdout }}"
+  command: id -gn "{{ username_on_the_host.stdout }}"
+  changed_when: false
+  delegate_to: localhost
   register: groupname_on_the_host
 
 - debug: var=groupname_on_the_host verbosity=1
 
 - name: Set name of backup directory
   set_fact:
-    localhost_backup_dir: "{{ metro_backup_root }}/backup-{{ ansible_date_time.iso8601_basic_short }}-{{ hostvars['localhost'].backup_type | default(backup_component_name) }}"
+    localhost_backup_dir:
+      "{{ metro_backup_root }}/backup-{{ ansible_date_time.iso8601_basic_short }}-{{ hostvars['localhost'].backup_type | default(backup_component_name) }}"
   delegate_to: localhost
   delegate_facts: True
   when: hostvars['localhost'].localhost_backup_dir is not defined

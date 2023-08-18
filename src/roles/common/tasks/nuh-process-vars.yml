@@ -1,18 +1,48 @@
 ---
 - block:
 
-  - name: Set NUH VM QCOW2 location
-    include_role:
-      name: common
-      tasks_from: find-file.yml
-    vars:
-      dir_name: "{{ nuage_unzipped_files_dir }}"
-      pattern: "nuage-utils-*.qcow2"
+  - block:
 
-  - name: Register NUH QCOW2 variables with proper path and image locations for use in other playbooks
-    set_fact:
-      image_path: "{{ file_path }}"
-      image_file_name: "{{ file_name }}"
+    - name: Set NUH VM QCOW2 location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "nuage-utils-*.qcow2"
+
+    - name: Register NUH QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
+    when: nuhs | selectattr('target_server_type', 'defined') | list | length == 0 or nuhs | selectattr('target_server_type', 'defined') | map(attribute='target_server_type') | list is issuperset(["kvm"])
+
+  - block:
+
+    - name: Set NUH VM OVA location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "nuage-utils-*.ova"
+
+    - name: Register NUH OVA variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
+    - name: Get version from file name
+      set_fact:
+        nuh_version: "{{ image_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+
+    - name: Assert that NUH version is at least 20.10.R5
+      assert:
+        that: nuh_version|upper|replace('R','') is version('20.10.5', '>=')
+        msg: "NUH version is {{ nuh_version }}. It must be at least 20.10.5 to be deployed in VMware using MetroAE."
+
+    when: nuhs | selectattr('target_server_type', 'defined') | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Verify NUH management gateway is in correct IP range
     include_role:
@@ -25,7 +55,12 @@
     with_items: "{{ nuhs }}"
 
   - name: Create host_vars files for nuhs
-    template: src=nuhs.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: nuhs
+      component_hostname: "{{ component.mgmt_ip if component.hostname is not defined else component.hostname }}"
+    loop_control:
+      loop_var: component
     with_items: "{{ nuhs }}"
 
   - name: Verify NUH DNS entries exist and hostnames map to their IPs

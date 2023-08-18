@@ -12,9 +12,14 @@
   - name: Get custom username for vsd
     set_fact:
       custom_username: "{{ hostvars[groups['vsd_sa_node'][0]].vsd_custom_username | default(vsd_custom_username) }}"
-      custom_password: "{{ hostvars[groups['vsd_sa_node'][0]].vsd_custom_password | default(vsd_custom_password) }}"
     when:
       - hostvars[groups['vsd_sa_node'][0]].vsd_custom_username is defined or vsd_custom_username is defined
+
+  - name: Get custom password for vsd
+    set_fact:
+      custom_password: "{{ hostvars[groups['vsd_sa_node'][0]].vsd_custom_password | default(vsd_custom_password) }}"
+    when:
+      - hostvars[groups['vsd_sa_node'][0]].vsd_custom_password is defined or vsd_custom_password is defined
 
   when: groups['vsd_sa_node'] is defined
 
@@ -32,10 +37,15 @@
   - name: Get custom username for vsd
     set_fact:
       custom_username: "{{ hostvars[groups['vsd_ha_node1'][0]].vsd_custom_username | default(vsd_custom_username) }}"
-      custom_password: "{{ hostvars[groups['vsd_ha_node1'][0]].vsd_custom_password | default(vsd_custom_password) }}"
     when:
       - hostvars[groups['vsd_ha_node1'][0]].vsd_custom_username is defined or vsd_custom_username is defined
 
+  - name: Get custom password for vsd
+    set_fact:
+      custom_password: "{{ hostvars[groups['vsd_ha_node1'][0]].vsd_custom_password | default(vsd_custom_password) }}"
+    when:
+      - hostvars[groups['vsd_ha_node1'][0]].vsd_custom_password is defined or vsd_custom_password is defined
+  
   when: groups['vsd_ha_node1'][0] is defined
 
 - name: Get VSD information
@@ -49,12 +59,24 @@
       name: common
       tasks_from: get-vsd-build
 
+  - name: Get Python executable path
+    shell: "which python" # noqa 305
+    register: python_exec
+    become: no
+
+  - name: Setup custom pass to pass to VSD hostname
+    set_fact:
+      sshpass_command: "sshpass -p{{ custom_password }} sudo VSD_VERSION=$VSD_VERSION VSD_BUILD=$VSD_BUILD"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    when: custom_password | default(vsd_default_password) != vsd_default_password
+
   - name: Get the vsd node info
-    command: /opt/vsd/sysmon/showStatus.py
+    shell: "{{ sshpass_command | default('') }} {{ python_exec.stdout }} /opt/vsd/sysmon/showStatus.py" # noqa 305
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
     register: vsd_info
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   remote_user: "{{ custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if custom_username | default(vsd_default_username) == 'root' else 'yes' }}"

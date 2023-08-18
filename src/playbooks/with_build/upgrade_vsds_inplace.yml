@@ -28,9 +28,36 @@
   roles:
     - vsd-dbbackup
 
-- hosts: vsd_inplace_upgrade_nodes
+- hosts: vsd_inplace_upgrade_backup_nodes
   gather_facts: no
   serial: 1
+  pre_tasks:
+    - name: Fail if vsd_migration_iso_path is not defined
+      assert:
+       that: vsd_migration_iso_path != "MISSING"
+       msg: "vsd_migration_iso_path not defined. Please define it and try again."
+
+    - name: Fail if vsd_migration_iso_file_name is not defined
+      assert:
+        that: vsd_migration_iso_file_name != "MISSING"
+        msg: "vsd_migration_iso_file_name not defined. Please define it and try again."
+
+    - name: Lets run VSD inplace upgrade hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ hook }}"
+        - hook_location:
+          - vsd_inplace_upgrade_nodes
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
+  roles:
+    - vsd-upgrade-inplace
+
+- hosts: vsd_inplace_upgrade_nodes[0]
+  gather_facts: no
   pre_tasks:
     - name: Fail if vsd_migration_iso_path is not defined
       assert:

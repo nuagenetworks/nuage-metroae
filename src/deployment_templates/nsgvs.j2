@@ -30,7 +30,19 @@
     #
     target_server: "{{ item.target_server }}"
 
+    {%- if show_target_server_type | default('kvm') == 'kvm' %}
+
+    # < Number of CPU cores >
+    # Number of CPU cores to defined for the VM
+    #
+    {%- if item.cpu_cores is defined %}
+    cpu_cores: {{ item.cpu_cores }}
+    {%- else %}
+    # cpu_cores: 1
+    {%- endif %}
+
     ##########################
+    {%- endif %}
 
     ##### Bootstrap Parameters
 
@@ -160,8 +172,29 @@
     {%- else %}
     # vcenter_datastore: (global vCenter Datastore Name)
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter Hosts and Clusters Folder >
+    # Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+    #
+    {%- if item.vcenter_host_clusters_folder is defined %}
+    vcenter_host_clusters_folder: "{{ item.vcenter_host_clusters_folder }}"
+    {%- else %}
+    # vcenter_host_clusters_folder: ""
+    {%- endif %}
 
     ########################
+    {%- endif %}
+
+    # < Preserve NSGV VM >
+    # Shuts down the vm during destroy process, instead of actually deleting them.
+    #
+    {%- if item.preserve_vm is defined %}
+    preserve_vm: {{ item.preserve_vm | lower }}
+    {%- else %}
+    # preserve_vm: true/false
     {%- endif %}
 
     {%- if show_target_server_type | default('aws') == 'aws' %}
@@ -312,6 +345,31 @@
     {%- else %}
     # provision_vpc_private_subnet_cidr: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
+
+    # < Deploy Only NSGv on AWS >
+    # Whether all components are being deployed on AWS or only the NSGv. Only needed when provision_vpc parameters are provided
+    # (true, false) 
+    #
+    {%- if item.deploy_only_nsgv is defined %}
+    deploy_only_nsgv: "{{ item.deploy_only_nsgv }}"
+    {%- else %}
+    # deploy_only_nsgv: false
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
+
+    # < Proxy IP Address >
+    # Externally routable IP address of the VNSUtil VM or the NUH used as a proxy for the NSGv on AWS. Required when deploying only the NSGv on AWS
+    #
+    {%- if item.proxy_external_ip is defined %}
+    proxy_external_ip: "{{ item.proxy_external_ip }}"
+    {%- else %}
+    # proxy_external_ip: ""
+    {%- endif %}
 
     ########################
     {%- endif %}
@@ -368,7 +426,7 @@
 
     ##### NSG Advanced Options
 
-    # < NSG Infra Profile Template Name >
+    # < NSG Template Name >
     # Name of the NSG infra profile template on the VSD
     #
     {%- if item.nsg_template_name is defined %}
@@ -455,6 +513,15 @@
     network_port_physical_name: "{{ item.network_port_physical_name }}"
     {%- else %}
     # network_port_physical_name: port1
+    {%- endif %}
+
+    # < NSG Network Port VLAN list >
+    # VLAN name list of the network port for the NSG
+    #
+    {%- if item.network_port_vlans is defined %}
+    network_port_vlans: [ {% for i in item.network_port_vlans | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # network_port_vlans: []
     {%- endif %}
 
     # < NSG Access Port Name >

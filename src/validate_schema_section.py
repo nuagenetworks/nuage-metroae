@@ -19,7 +19,7 @@ def validate_sections(schema_contents, file_name):
             if len(stack) > 0:
                 # Two sectionBegin
                 print(
-                    "Error in " + file_name + "! There are two overlap " +
+                    "Error in " + file_name + "! There are two overlapping " +
                     SECTION_BEGIN_FIELD + ': "' + stack.pop() + '" and "' +
                     match.group(2) + '"')
                 exit(1)
@@ -29,7 +29,7 @@ def validate_sections(schema_contents, file_name):
                 # No previous match
                 print(
                     "Error in " + file_name + "! There is no " +
-                    SECTION_BEGIN_FIELD + ' correspond to "' +
+                    SECTION_BEGIN_FIELD + ' corresponding to "' +
                     SECTION_END_FIELD + '": ' + match.group(2))
                 exit(1)
             pre_section = stack.pop()
@@ -46,7 +46,7 @@ def validate_sections(schema_contents, file_name):
 def main():
 
     if len(sys.argv) < 2:
-        print "Usage: " + sys.argv[0] + " <schema_file>"
+        print("Usage: " + sys.argv[0] + " <schema_file>")
         exit(1)
 
     schema_file = os.path.join(SCHEMA_DIRECTORY, sys.argv[1])

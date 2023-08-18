@@ -1,0 +1,24 @@
+- hosts: vcin_inplace_upgrade_nodes[0]
+  gather_facts: no
+  any_errors_fatal: true
+  run_once: true
+  pre_tasks:
+    - name: Fail if vsd_migration_iso_path is not defined
+      assert:
+       that: vsd_migration_iso_path != "MISSING"
+       msg: "vsd_migration_iso_path not defined. Please define it and try again."
+
+    - name: Fail if vsd_migration_iso_file_name is not defined
+      assert:
+       that: vsd_migration_iso_file_name != "MISSING"
+       msg: "vsd_migration_iso_file_name not defined. Please define it and try again."
+  vars:
+    vcin_backup: True
+  roles:
+    - vsd-dbbackup
+
+- hosts: vcin_inplace_upgrade_nodes
+  gather_facts: no
+  serial: 1
+  roles:
+    - vsd-upgrade-inplace

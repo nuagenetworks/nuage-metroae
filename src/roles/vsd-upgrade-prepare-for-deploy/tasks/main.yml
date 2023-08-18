@@ -13,12 +13,21 @@
       path: "/opt/vsd/data"
       state: directory
 
-  - name: Copy backup files from backup_machine
+  - name: Copy VSD backup files from backup_machine
     copy:
       src: "{{ item }}"
       dest: "/opt/vsd/data/"
     with_fileglob:
       - "{{ restore_dir | default( metro_backup_root + '/backup-latest-upgrade-vsd' ) }}/*.tar.gz"
+    when: not vcin_backup | default(False)
+
+  - name: Copy VCIN backup files from backup_machine
+    copy:
+      src: "{{ item }}"
+      dest: "/opt/vsd/data/"
+    with_fileglob:
+      - "{{ restore_dir | default( metro_backup_root + '/backup-latest-upgrade-vcin' ) }}/*.tar.gz"
+    when: vcin_backup | default(False)
 
   - name: Delete log files from /opt/vsd/data/ directory
     shell:
@@ -35,7 +44,7 @@
 
 - name: Verify  /opt/vsd/data/ directory contains exactly 3 files
   assert:
-    that: "lst_files.examined == 3"
+    that: "lst_files.matched == 3"
     msg: "/opt/vsd/data does not contain exactly 3 files"
 
 - name: Reset keystore password to default, if changed

@@ -1,0 +1,63 @@
+- name: Create SD-WAN Portal backup directory on localhost
+  include_role:
+    name: common
+    tasks_from: create-backup-dir
+  vars:
+    backup_component_name: portal
+    backup_host_name: "{{ inventory_hostname }}"
+
+- block:
+
+  - name: Ensure there are database backups within the last day (ignoring errors)
+    find:
+      paths: /opt/vnsportal/db-backups/
+      file_type: directory
+      recurse: no
+      age: -1d
+    register: db_backups
+    ignore_errors: true
+
+  - block:
+
+    - name: Get disk usage percentage
+      shell: df -PTh /opt/vnsportal/db-backups/ | awk '{if(NR>1)print $6}'
+      register: usage_percentage
+
+    - name: Clean usage output
+      set_fact:
+        usage_amount: "{{ usage_percentage|replace('%', '') }}"
+
+    - name: Assert that there is enough disk space available for database backup
+      assert:
+        that: "usage_amount|int <= {{ portal_maximum_disk_usage|int }}"
+        msg: "There is not enough free disk space to do a database backup."
+
+    - name: Backup database if there are no backups
+      shell: sh /etc/cron.daily/vnsportal-backup-cron
+
+    when: db_backups.matched == 0 or (db_backups.matched == 1 and db_backups.files is search('installer'))
+
+  - name: Get all database backups
+    find:
+      paths: /opt/vnsportal/db-backups/
+      file_type: directory
+      recurse: no
+    register: all_db_backups
+
+  - name: Get latest database backup
+    set_fact:
+      latest_backup: "{{ all_db_backups.files | sort(attribute='mtime', reverse=true) | first }}"
+
+  - name: Get all files in latest backup
+    find:
+      paths: "{{ latest_backup.path }}"
+      recurse: yes
+    register: latest_backup_files
+
+  - name: Copy database backup to MetroAE host
+    fetch:
+      src: "{{ item.path }}"
+      dest: "{{ localhost_component_backup_dir }}"
+    with_items: "{{ latest_backup_files.files }}"
+
+  remote_user: "{{ portal_default_username }}"

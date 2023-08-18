@@ -1,0 +1,74 @@
+---
+# Playbook to add a user to the Stats group
+#
+# Required variables:
+# - vspk_auth: dict used as authentication parameter for the nuage_vspk calls
+#
+# It assumes the tasks to be delegated to a server that has the
+# nuage vspk python module installed.
+
+- block:
+
+  - name: Get current VSD API version
+    include_role:
+      name: common
+      tasks_from: get-current-vsd-api-version
+
+  - name: Format VSPK auth for VSPK module
+    set_fact:
+      vspk_auth:
+        api_username: "{{ vsd_auth.username }}"
+        api_password: "{{ vsd_auth.password }}"
+        api_enterprise: "{{ vsd_auth.enterprise }}"
+        api_url: "{{ vsd_auth.api_url }}"
+        api_version: "{{ current_api_version }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
+  - name: Check if the user already exists (ignoring errors)
+    nuage_vspk:
+      auth: "{{ vspk_auth }}"
+      type: User
+      command: find
+      properties:
+        userName: "{{ stats_user_user_name | default('statsuser') }}"
+    ignore_errors: yes
+    register: nuage_check_user
+
+  - block:
+
+    - name: Create stats user
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: User
+        state: present
+        properties:
+          user_name: "{{ stats_user_user_name | default('statsuser') }}"
+          first_name: "{{ stats_user_first_name | default('Statsuser') }}"
+          last_name: "{{ stats_user_last_name | default('Statsuser') }}"
+          email: "{{ stats_user_email | default('statsuser@csp.com') }}"
+          password: "{{ stats_user_password | default(vstat_default_password) }}"
+      register: stats_user
+
+    - name: Get Stats Group
+      nuage_vspk:
+          auth: "{{ vspk_auth }}"
+          type: Group
+          command: find
+          parent_type: Enterprise
+          parent_id: 76046673-d0ea-4a67-b6af-2829952f0812
+          properties:
+            name: "Stats Group"
+      register: stats_group
+
+    - name: Assign stats user to Stats Group
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: User
+        id: "{{ stats_user.id }}"
+        parent_id: "{{ stats_group.id }}"
+        parent_type: Group
+        state: present
+
+    when: nuage_check_user is failed
+
+  delegate_to: localhost

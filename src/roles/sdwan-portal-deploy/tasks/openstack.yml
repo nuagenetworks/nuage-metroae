@@ -1,0 +1,64 @@
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: upgrade
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+  when: not upgrade
+
+- name: Get PORTAL details from OpenStack
+  os_server_info:
+    auth:
+      "{{ openstack_auth }}"
+    server: "{{ vm_name }}"
+    client_cert: null
+    client_key: null
+    cacert: "{{ openstack_cacert }}"
+    validate_certs: false
+  register: portal_ip
+  delegate_to: localhost
+
+- name: Set portal mgmt ip
+  set_fact:
+    portal_mgmt_ip: "{{ portal_ip['openstack_servers'][0]['addresses'][openstack_network][0]['addr'] }}"
+
+- name: Wait for PORTAL ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ portal_mgmt_ip }}"
+    host_username: "{{ portal_default_username }}"
+
+- block:
+
+  - name: Update hostname
+    template:
+      src: "{{ role_path }}/../common/templates/network.j2"
+      dest: /etc/sysconfig/network
+      backup: no
+
+  - name: Add a DNS server to eth0
+    lineinfile:
+      dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+      line: "DNS1={{ dns_server_list[0] }}"
+
+  - name: Restart networking
+    command: /etc/init.d/network restart
+
+  - name: Resolve fqdn
+    command: hostname "{{ inventory_hostname }}"
+
+  remote_user: "{{ portal_default_username }}"

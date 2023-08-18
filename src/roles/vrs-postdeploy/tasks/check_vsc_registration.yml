@@ -29,8 +29,6 @@
     become: "{{ 'no' if compute_username == 'root' else 'yes' }}"
     register: ovs_vtep_ip
 
-  - debug: var=ovs_vtep_ip verbosity=1
-
   - name: Wait for VSC ssh to be ready
     include_role:
       name: common
@@ -45,6 +43,8 @@
     set_fact:
       version_expr: '{ split($1, version, "-"); print version[4] }'
 
+  - meta: reset_connection
+
   - name: Get output of 'show version'
     sros_command:
       commands:
@@ -58,9 +58,9 @@
     delegate_to: localhost
     register: vsc_version
 
-  - debug: var=vsc_version.stdout verbosity=1
-
   - block:
+
+    - meta: reset_connection
 
     - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version less than 6.0.1
       sros_command:
@@ -77,6 +77,8 @@
     when: vsc_version.stdout is version('6.0.1', '<')
 
   - block:
+
+    - meta: reset_connection
 
     - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version greater than 6.0.1
       sros_command:
