@@ -4,7 +4,7 @@
 
 * MetroAE Version 5.5.0
 * Nuage Release Alignment 20.10.R1
-* Date of Release
+* Date of Release 2023-08-21
 
 ## Release Contents
 
@@ -14,7 +14,9 @@
 ### Resolved Issues
 * Fix DNS restart issue for TPM server HA deployment (METROAE-668)
 * Update/Renew VSD ejabberd license for 20.10.Rx version (METROAE-669)
+* VSC R13 installation fails due to ssh hardening (METROAE-672)
 * Fix SD-WAN Portal standalone deployment (METROAE-667)
+* VSTATs(ES) upgrade fails while checking for ES version after the upgrade is complete (METROAE-671)
 
 ## Test Matrix
 
