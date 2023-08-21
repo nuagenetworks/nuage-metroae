@@ -78,7 +78,7 @@ for dir in $EXAMPLE_DATA_DIR/*/; do
     done
 
     mkdir -p $EXAMPLE_DIR/excel
-    python src/convert_schemas_to_excel.py $EXAMPLE_DIR/excel/${example_name}.xlsx $dir
+    python3 src/convert_schemas_to_excel.py $EXAMPLE_DIR/excel/${example_name}.xlsx $dir
 done
 
 echo "Generate deployment spreadsheet template CSV"
@@ -86,8 +86,8 @@ python src/generate_deployment_spreadsheet_template.py > deployment_spreadsheet_
 
 
 echo "Generate deployment excel spreadsheet template"
-python src/convert_schemas_to_excel.py sample_deployment.xlsx
-python src/convert_schemas_to_excel.py $EXAMPLE_DIR/excel/blank_deployment.xlsx
+python3 src/convert_schemas_to_excel.py sample_deployment.xlsx
+python3 src/convert_schemas_to_excel.py $EXAMPLE_DIR/excel/blank_deployment.xlsx
 
 echo "Generate deployment spreadsheet example"
 mkdir $CSV_DEPLOYMENT_DIR

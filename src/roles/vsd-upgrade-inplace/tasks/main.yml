@@ -54,35 +54,77 @@
     copy: src="{{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}"
         dest=/tmp/
 
-  - name: Create mount point on /media/CDROM
-    file:
-      path: /media/CDROM
-      state: directory
+  - block:
 
-  - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
-    command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM"  # noqa 303
+    - name: Create mount point on /media/CDROM
+      file:
+        path: /media/CDROM
+        state: directory
 
-  - name: Upgrade to RHEL 7.9
-    command: /media/CDROM/vsd-patch-20.10.sh -y
-    when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=')
+    - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
+      command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM"  # noqa 303
 
-  - name: Check and print what needs to be patched on VSD
-    command: /media/CDROM/vsd-patch.sh -c
+    - name: Upgrade to RHEL 7.9
+      command: /media/CDROM/vsd-patch-20.10.sh -y
+      when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=')
 
-  - name: Run the patch
-    command: /media/CDROM/vsd-patch.sh
+    - name: Check and print what needs to be patched on VSD
+      command: /media/CDROM/vsd-patch.sh -c
+
+    - name: Run the patch
+      command: /media/CDROM/vsd-patch.sh
+      vars:
+        ansible_python_interpreter: "{{ python_location }}"
+
+    - name: Umount the ISO
+      shell: "umount /media/CDROM"
+
     when: not patch_ejabberd|default(False)
-    vars:
-      ansible_python_interpreter: "{{ python_location }}"
 
-  - name: Run the patch
-    command: /media/CDROM/vsd-patch.sh -y
+  - block:
+
+    - name: Check if rpm file is defined
+      fail: msg="For upgrade to 20.10.R4+, you are supposed to define vsd_ejabberd_rpm_file variable which is the path to rpm file needed to renew the ejabberd license file for VSD. It should be defined under upgrade.yml"
+      when: vsd_ejabberd_rpm_file is undefined
+
+    - name: Copy ejjaberd license rpm file if it exists
+      copy: src="{{ vsd_ejabberd_rpm_file }}"
+          dest=/tmp/
+
+    - name: Mount VSD-migration-scripts-xxx.iso on /mnt
+      command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /mnt"  # noqa 303
+
+    - name: Create new directory to run upgrade from
+      file:
+        path: /root/upgrade
+        state: directory
+
+    - name: Copy content of the migration ISO to new directory
+      shell:
+        cmd: "cp -r /mnt/* /root/upgrade/"
+
+    - name: Copy the downloaded ejabberd license rpm into Packages directory
+      copy:
+        dest: "/root/upgrade/Packages/"
+        src: "/tmp/ejabberd-4.2002.23-0.x86_64.rpm"
+        remote_src: yes
+
+    - name: Upgrade to RHEL 7.9
+      command: /root/upgrade/vsd-patch-20.10.sh -y
+      when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=')
+
+    - name: Check and print what needs to be patched on VSD
+      command: /root/upgrade/vsd-patch.sh -c
+
+    - name: Run the patch
+      command: /root/upgrade/vsd-patch.sh -y
+      vars:
+        ansible_python_interpreter: "{{ python_location }}"
+
+    - name: Umount the ISO
+      shell: "umount /mnt"
+
     when: patch_ejabberd|default(False)
-    vars:
-      ansible_python_interpreter: "{{ python_location }}"
-
-  - name: Umount the ISO
-    shell: "umount /media/CDROM"
 
   - name: Delete the VSD migration script ISO from VSD's temp directory
     file:
@@ -101,6 +143,11 @@
     tasks_from: monit_status
   vars:
     no_report: "True"
+
+- name: Run the ejabberd GUI update script
+  command: timeout 60 /opt/vsd/sysmon/ejabberdLicenseExpiryDateUpdater.py
+  when: upgrade_to_version|upper|replace('R','') is version('20.10.7', '>=')
+  ignore_errors: True
 
 - name: Allow XMPP Connections after patching Ejabberd
   include_role:
@@ -125,7 +172,7 @@
     when:
       - not standby_vsds
       - not stats_only_vm
-    vars: 
+    vars:
       vsd_branding_host: "{{ inventory_hostname }}"
 
   when: branding_zip_file is defined
